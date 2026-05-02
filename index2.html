@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="transition-colors duration-300">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مساري - المنصة الشاملة (نسخة المحترفين)</title>
+    <!-- إعدادات Tailwind للوضع الليلي -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Tajawal', 'sans-serif'] },
+                    colors: { darkBg: '#0f172a', darkCard: '#1e293b' }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Tajawal', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d8b4fe; border-radius: 10px; }
+        html.dark ::-webkit-scrollbar-thumb { background: #6b21a8; }
+        
+        /* أنيميشن الظهور السلس */
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800 bg-[#F4F5FB] dark:bg-darkBg dark:text-gray-200 transition-colors duration-300">
+
+    <!-- القائمة الجانبية -->
+    <aside class="w-64 bg-white dark:bg-darkCard border-l border-purple-100 dark:border-gray-800 flex flex-col shadow-sm z-20 hidden md:flex transition-colors duration-300">
+        <div class="p-6 flex items-center justify-center border-b border-gray-50 dark:border-gray-800">
+            <span class="text-3xl font-bold text-purple-700 dark:text-purple-400 flex items-center gap-2">مساري <span class="text-2xl animate-bounce">🎓</span></span>
+        </div>
+        <nav class="flex-1 p-4 space-y-2 mt-4" id="sidebar-nav">
+            <button onclick="switchTab('path', this)" class="nav-btn w-full flex items-center gap-3 p-3 bg-purple-600 text-white rounded-xl shadow-md shadow-purple-200 dark:shadow-none transition transform hover:scale-105 active:scale-95">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"></path></svg>
+                المسار الدراسي
+            </button>
+            <button onclick="switchTab('planner', this)" class="nav-btn w-full flex items-center gap-3 p-3 text-gray-500 dark:text-gray-400 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-800 hover:text-purple-700 dark:hover:text-purple-400 transition transform hover:scale-105 active:scale-95">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                مخطط الفصل
+            </button>
+            <button onclick="switchTab('network', this)" class="nav-btn w-full flex items-center gap-3 p-3 text-gray-500 dark:text-gray-400 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-800 hover:text-purple-700 dark:hover:text-purple-400 transition transform hover:scale-105 active:scale-95">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                شبكة الطلاب
+            </button>
+            <button onclick="switchTab('support', this)" class="nav-btn w-full flex items-center gap-3 p-3 text-gray-500 dark:text-gray-400 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-800 hover:text-purple-700 dark:hover:text-purple-400 transition transform hover:scale-105 active:scale-95">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                مركز الدعم
+            </button>
+        </nav>
+        
+        <!-- مساحة إعلانية للمستقبل أو نصيحة يومية -->
+        <div class="p-4 m-4 bg-purple-50 dark:bg-gray-800 rounded-xl border border-purple-100 dark:border-gray-700 text-center text-sm">
+            <p class="font-bold text-purple-700 dark:text-purple-400 mb-1">💡 نصيحة اليوم</p>
+            <p class="text-gray-500 dark:text-gray-400">قسّم المشاريع الكبيرة لمهام صغيرة، رح تنجز أسرع!</p>
+        </div>
+    </aside>
+
+    <!-- المحتوى الرئيسي -->
+    <main class="flex-1 flex flex-col h-screen overflow-hidden relative">
+        
+        <!-- الهيدر الثابت -->
+        <header class="bg-white dark:bg-darkCard p-5 flex justify-between items-center shadow-sm z-10 transition-colors duration-300 border-b border-gray-100 dark:border-gray-800">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h1 id="page-title" class="text-2xl font-bold text-gray-800 dark:text-white">المسار الدراسي 🧭</h1>
+                    <span id="smart-greeting" class="hidden md:inline-block text-sm font-bold bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full ml-2"></span>
+                </div>
+                <p id="page-desc" class="text-sm text-gray-400 dark:text-gray-500 mt-1">خريطتك للوصول للتخرج بأذكى طريقة.</p>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <!-- زر الوضع الليلي -->
+                <button onclick="toggleDarkMode()" class="p-2 bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-yellow-400 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" title="تغيير المظهر">
+                    <svg id="theme-icon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+
+                <!-- الإشعارات -->
+                <button class="p-2 bg-gray-50 dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded-full hover:bg-purple-100 dark:hover:bg-gray-700 transition relative">
+                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-darkCard animate-pulse"></span>
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                </button>
+
+                <!-- بروفايل مع نقاط (Gamification) -->
+                <div class="flex items-center gap-2 bg-gray-50 dark:bg-gray-800 p-1.5 pr-4 rounded-full border border-gray-100 dark:border-gray-700 cursor-pointer hover:shadow-md transition">
+                    <div class="hidden md:block text-left">
+                        <p class="text-sm font-bold text-gray-800 dark:text-white">أحمد الجمل</p>
+                        <p class="text-xs text-yellow-500 font-bold">⚡ 1,250 نقطة (سفاح الدفعة)</p>
+                    </div>
+                    <div class="w-10 h-10 bg-gradient-to-tr from-purple-600 to-blue-500 rounded-full flex items-center justify-center text-white font-bold shadow-md">أ.ج</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- منطقة الصفحات -->
+        <div class="flex-1 overflow-y-auto p-6 md:p-8 w-full max-w-7xl mx-auto scroll-smooth">
+            
+            <!-- 1. صفحة المسار الدراسي -->
+            <section id="path" class="tab-content block space-y-8 fade-in">
+                <!-- شريط التقدم -->
+                <div class="bg-white dark:bg-darkCard rounded-2xl p-6 shadow-sm border border-purple-50 dark:border-gray-800 flex flex-col md:flex-row justify-between items-center gap-4 transition-colors">
+                    <div class="w-full">
+                        <div class="flex justify-between mb-2">
+                            <h2 class="text-lg font-bold text-gray-700 dark:text-gray-200">إنجازك الأكاديمي 🔥</h2>
+                            <span class="text-purple-600 dark:text-purple-400 font-bold">45%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-4 overflow-hidden relative">
+                            <div class="absolute inset-0 bg-white/20 w-full"></div>
+                            <div class="bg-gradient-to-r from-purple-500 to-purple-700 dark:to-purple-400 h-4 rounded-full relative overflow-hidden" style="width: 45%">
+                                <div class="absolute inset-0 bg-white/20 w-full animate-[translate_2s_infinite]"></div>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">لقد أنجزت 60 من أصل 132 ساعة. استمر يا بطل! 💪</p>
+                    </div>
+                </div>
+
+                <!-- المواد -->
+                <div>
+                    <h3 class="text-xl font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2">
+                        <span class="bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 p-1 rounded-md text-sm">الحالي</span> 
+                        السنة الثانية - الفصل الأول
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div class="bg-white dark:bg-darkCard border-r-4 border-green-500 p-5 rounded-2xl shadow-sm relative hover:shadow-lg transition">
+                            <div class="absolute top-0 left-0 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-xs px-2 py-1 rounded-br-lg font-bold">مكتملة (92)</div>
+                            <h4 class="font-bold text-gray-800 dark:text-white text-lg mb-1 mt-2">تراكيب البيانات</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">إجباري • 3 ساعات</p>
+                        </div>
+                        <div class="bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-darkCard border-r-4 border-purple-600 p-5 rounded-2xl shadow-md relative ring-2 ring-purple-100 dark:ring-purple-900 hover:scale-105 transition transform">
+                            <div class="absolute top-0 left-0 bg-purple-600 text-white text-xs px-2 py-1 rounded-br-lg font-bold">مسجلة حالياً</div>
+                            <h4 class="font-bold text-purple-800 dark:text-purple-300 text-lg mb-1 mt-2">تصميم واجهات المستخدم</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">إجباري • 3 ساعات</p>
+                            <button class="w-full mt-2 bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 py-2 rounded-lg text-sm font-bold hover:bg-purple-200 transition">دخول لصفحة المادة</button>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-800 border-r-4 border-gray-300 dark:border-gray-600 p-5 rounded-2xl opacity-75">
+                            <h4 class="font-bold text-gray-500 dark:text-gray-400 text-lg mb-1 mt-2 flex justify-between items-center">
+                                تطوير الويب المتقدم <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                            </h4>
+                            <p class="text-sm text-red-500 dark:text-red-400 mb-3 font-bold mt-2">مغلقة - تحتاج: أساسيات الويب</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. صفحة مخطط الفصل -->
+            <section id="planner" class="tab-content hidden space-y-6 fade-in">
+                <!-- إحصائيات وبومودورو -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="col-span-2 grid grid-cols-2 gap-4">
+                        <div class="bg-white dark:bg-darkCard p-5 rounded-2xl shadow-sm border border-purple-50 dark:border-gray-800 flex items-center justify-between">
+                            <div><p class="text-sm text-gray-500">مهام هذا الأسبوع</p><h3 class="text-2xl font-bold text-purple-700 dark:text-purple-400">5</h3></div>
+                            <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-xl">📝</div>
+                        </div>
+                        <div class="bg-red-50 dark:bg-red-900/20 p-5 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/50 flex items-center justify-between">
+                            <div><p class="text-sm text-red-600 dark:text-red-400 font-bold">تسليمات طارئة</p><h3 class="text-2xl font-bold text-red-600">1</h3></div>
+                            <div class="w-12 h-12 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center text-xl animate-pulse">🚨</div>
+                        </div>
+                    </div>
+                    
+                    <!-- إضافة وضع التركيز (Pomodoro) -->
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 text-white shadow-lg flex flex-col items-center justify-center relative overflow-hidden group">
+                        <div class="absolute inset-0 bg-white/10 w-full transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-500"></div>
+                        <h4 class="font-bold mb-1 flex items-center gap-2">⏱️ وضع التركيز</h4>
+                        <div class="text-3xl font-mono font-bold my-2 tracking-widest">25:00</div>
+                        <button class="bg-white text-purple-600 px-6 py-1 rounded-full text-sm font-bold hover:shadow-lg transition">ابدأ الآن</button>
+                    </div>
+                </div>
+
+                <!-- قائمة المهام -->
+                <div class="bg-white dark:bg-darkCard rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden">
+                    <div class="p-5 border-b border-gray-50 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 dark:bg-gray-800/50">
+                        <h3 class="font-bold text-gray-800 dark:text-white">الجدول الزمني والتسليمات</h3>
+                    </div>
+                    <div class="p-5 space-y-4">
+                        <div class="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/10 rounded-xl border border-red-100 dark:border-red-900/30 transform transition hover:-translate-y-1 hover:shadow-md">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-white dark:bg-darkCard rounded-xl flex flex-col items-center justify-center shadow-sm border border-red-200 dark:border-red-800 text-red-600 font-bold">
+                                    <span class="text-xs uppercase">غداً</span><span class="text-xl">24</span>
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-800 dark:text-white">مشروع واجهات المستخدم</h4>
+                                    <p class="text-sm text-red-500 mt-1 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> متبقي 24 ساعة • +50 نقطة عند التسليم</p>
+                                </div>
+                            </div>
+                            <button class="w-8 h-8 rounded-full border-2 border-red-300 hover:bg-red-500 hover:border-red-500 transition group flex items-center justify-center"><svg class="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 3. صفحة شبكة الطلاب -->
+            <section id="network" class="tab-content hidden space-y-6 fade-in">
+                
+                <!-- منطقة السحب والإفلات الذكية (Drag & Drop) -->
+                <div class="w-full border-2 border-dashed border-purple-300 dark:border-purple-700 bg-purple-50/50 dark:bg-purple-900/10 rounded-2xl p-8 text-center hover:bg-purple-50 dark:hover:bg-purple-900/20 transition cursor-pointer group">
+                    <div class="w-16 h-16 bg-white dark:bg-darkCard rounded-full mx-auto flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition duration-300">
+                        <svg class="w-8 h-8 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                    </div>
+                    <h3 class="font-bold text-purple-800 dark:text-purple-300 text-lg">شارك ملخصك مع الدفعة!</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">اسحب وأفلت ملف الـ PDF هنا، وراح تاخد 100 نقطة ⚡ فوراً</p>
+                </div>
+
+                <!-- الفلاتر -->
+                <div class="flex flex-wrap gap-4 bg-white dark:bg-darkCard p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+                    <input type="text" placeholder="ابحث عن طالب أو مادة..." class="flex-1 min-w-[200px] p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-300 dark:text-white">
+                </div>
+
+                <!-- البطاقات -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white dark:bg-darkCard p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 text-center hover:-translate-y-2 transition duration-300">
+                        <div class="w-20 h-20 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full mx-auto mb-4 border-4 border-white dark:border-darkCard shadow-lg flex items-center justify-center text-white text-2xl font-bold relative">
+                            م.ع
+                            <span class="absolute bottom-0 right-0 bg-green-500 w-4 h-4 rounded-full border-2 border-white dark:border-darkCard"></span>
+                        </div>
+                        <h3 class="font-bold text-lg text-gray-800 dark:text-white">محمد علي</h3>
+                        <p class="text-sm text-gray-500 mb-4">أعلى الدفعة 🏆</p>
+                        <div class="flex gap-2">
+                            <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm transition">رسالة 💬</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 4. مركز الدعم -->
+            <section id="support" class="tab-content hidden space-y-8 fade-in">
+                <div class="bg-gradient-to-r from-purple-700 to-indigo-600 rounded-2xl p-8 text-white shadow-lg flex flex-col md:flex-row justify-between items-center gap-6 relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+                    <div class="relative z-10">
+                        <h2 class="text-3xl font-bold mb-2">معك مشكلة؟ لا تشيل هم! 🤝</h2>
+                        <p class="text-purple-100">فريق الدعم الفني وطلاب الدفعة الأقدم جاهزين يساعدوك فوراً.</p>
+                    </div>
+                    <button class="relative z-10 bg-white text-purple-700 px-6 py-3 rounded-xl font-bold hover:scale-105 transition shadow-xl flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 24 24"><path d="M12.01 2.014c-5.512 0-9.99 4.478-9.99 9.99 0 1.954.555 3.774 1.542 5.33l-1.55 5.666 5.8-1.523a9.962 9.962 0 004.198.932c5.513 0 9.99-4.477 9.99-9.99S17.522 2.014 12.01 2.014zm4.846 13.585c-.201.565-1.157 1.082-1.606 1.134-.448.053-.984.11-2.825-.652-2.203-.913-3.616-3.153-3.728-3.303-.112-.15-.892-1.186-.892-2.261 0-1.076.56-1.606.757-1.817.197-.211.428-.264.571-.264.143 0 .286.006.41.012.133.006.311-.053.486.368.183.44.624 1.524.68 1.638.057.114.095.247.02.399-.076.152-.114.247-.228.361-.114.114-.24.242-.343.342-.114.103-.234.218-.106.439.128.22.568.938 1.216 1.516.837.747 1.542.978 1.764 1.092.222.114.352.095.485-.057.133-.152.571-.665.723-.893.152-.228.305-.19.508-.114.203.076 1.284.606 1.503.717.22.111.366.166.418.258.053.092.053.53-.148 1.095z"/></svg>
+                        تواصل عبر واتساب
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- 🚀 الزر العائم السحري (Magic FAB) -->
+        <div class="fixed bottom-8 left-8 z-50 group">
+            <div class="absolute bottom-16 left-0 flex flex-col gap-3 scale-0 group-hover:scale-100 transition-all origin-bottom duration-300 opacity-0 group-hover:opacity-100 mb-2">
+                <button class="bg-blue-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 hover:scale-110 transition group/btn relative">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span class="absolute left-14 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 whitespace-nowrap transition">مهمة جديدة</span>
+                </button>
+                <button class="bg-green-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center hover:bg-green-600 hover:scale-110 transition group/btn relative">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span class="absolute left-14 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 whitespace-nowrap transition">رفع ملخص</span>
+                </button>
+                <button class="bg-yellow-500 text-white p-3 rounded-full shadow-lg flex items-center justify-center hover:bg-yellow-600 hover:scale-110 transition group/btn relative">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span class="absolute left-14 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover/btn:opacity-100 whitespace-nowrap transition">اسأل سؤال</span>
+                </button>
+            </div>
+            <button class="w-16 h-16 bg-purple-600 text-white rounded-full shadow-2xl flex items-center justify-center text-3xl hover:bg-purple-700 hover:rotate-90 transition duration-300">
+                +
+            </button>
+        </div>
+
+    </main>
+
+    <!-- سكربتات المنصة -->
+    <script>
+        const pageInfo = {
+            'path': { title: 'المسار الدراسي 🧭', desc: 'خريطتك للوصول للتخرج بأذكى طريقة.' },
+            'planner': { title: 'مخطط الفصل الذكي 📅', desc: 'مهامك، امتحاناتك وتسليماتك في مكان واحد.' },
+            'network': { title: 'شبكة الطلاب 👥', desc: 'تواصل، شارك، وادرس مع زملاء تخصصك.' },
+            'support': { title: 'مركز الدعم الجامعي 🎓', desc: 'حلول فورية لمشاكلك الفنية والأكاديمية.' }
+        };
+
+        // دالة التنقل
+        function switchTab(tabId, clickedBtn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('page-title').innerText = pageInfo[tabId].title;
+            document.getElementById('page-desc').innerText = pageInfo[tabId].desc;
+
+            // تغيير ألوان الأزرار لتدعم الوضعين العادي والليلي
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.className = 'nav-btn w-full flex items-center gap-3 p-3 text-gray-500 dark:text-gray-400 rounded-xl hover:bg-purple-50 dark:hover:bg-gray-800 hover:text-purple-700 dark:hover:text-purple-400 transition transform hover:scale-105 active:scale-95';
+            });
+            clickedBtn.className = 'nav-btn w-full flex items-center gap-3 p-3 bg-purple-600 text-white rounded-xl shadow-md transition transform hover:scale-105 active:scale-95';
+        }
+
+        // 🌙 دالة الوضع الليلي
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const icon = document.getElementById('theme-icon');
+            if(document.documentElement.classList.contains('dark')) {
+                // أيقونة شمس للوضع الليلي
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+            } else {
+                // أيقونة قمر للوضع العادي
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+            }
+        }
+
+        // 🤖 التحية الذكية حسب وقت النظام
+        window.onload = () => {
+            const hour = new Date().getHours();
+            let greeting = "";
+            if(hour >= 5 && hour < 12) greeting = "صباح النشاط يا هندسة ☕";
+            else if(hour >= 12 && hour < 18) greeting = "مساء الإنجاز 🎯";
+            else greeting = "سهرة دراسية موفقة 🌙";
+            
+            document.getElementById('smart-greeting').innerText = greeting;
+        }
+    </script>
+</body>
+</html>
