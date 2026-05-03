@@ -24,7 +24,8 @@ const EMPTY_FORM = {
 };
 
 interface Props {
-  onAdd: (course: Omit<Course, "id" | "grade">) => void;
+  // ✅ شلنا "grade" من الـ Omit عشان نقدر نمرر grade: null
+  onAdd: (course: Omit<Course, "id">) => void;
 }
 
 export default function AddCourseDialog({ onAdd }: Props) {
@@ -32,18 +33,16 @@ export default function AddCourseDialog({ onAdd }: Props) {
   const [form, setForm] = useState(EMPTY_FORM);
   const toast = useToast();
 
-const handleSubmit = () => {
-  if (!form.name || !form.code) {
-    toast.error('بيانات ناقصة', 'يرجى تعبئة اسم المادة والرمز');
-    return;
-  }
-  onAdd({ ...form, grade: null }); // ← حذفنا id: Date.now()
-  toast.success('تمت إضافة المادة', `تم إضافة ${form.name} إلى مسارك الدراسي`);
-  setForm(EMPTY_FORM);
-  setOpen(false);
-};
-
-
+  const handleSubmit = () => {
+    if (!form.name || !form.code) {
+      toast.error('بيانات ناقصة', 'يرجى تعبئة اسم المادة والرمز');
+      return;
+    }
+    onAdd({ ...form, grade: null });
+    toast.success('تمت إضافة المادة', `تم إضافة ${form.name} إلى مسارك الدراسي`);
+    setForm(EMPTY_FORM);
+    setOpen(false);
+  };
 
   return (
     <>
@@ -57,11 +56,9 @@ const handleSubmit = () => {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-card rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+          <div className="bg-card rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl" dir="rtl">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="font-bold text-foreground text-lg">
-                إضافة مادة جديدة
-              </h3>
+              <h3 className="font-bold text-foreground text-lg">إضافة مادة جديدة</h3>
               <button
                 onClick={() => setOpen(false)}
                 className="p-1.5 rounded-lg hover:bg-muted transition-colors"
@@ -72,9 +69,7 @@ const handleSubmit = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-foreground mb-1.5 block">
-                  اسم المادة
-                </label>
+                <label className="text-sm font-medium text-foreground mb-1.5 block">اسم المادة</label>
                 <input
                   type="text"
                   value={form.name}
@@ -86,9 +81,7 @@ const handleSubmit = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    رمز المادة
-                  </label>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">رمز المادة</label>
                   <input
                     type="text"
                     value={form.code}
@@ -98,15 +91,11 @@ const handleSubmit = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    الساعات
-                  </label>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">الساعات</label>
                   <input
                     type="number"
                     value={form.credits}
-                    onChange={(e) =>
-                      setForm({ ...form, credits: Number(e.target.value) })
-                    }
+                    onChange={(e) => setForm({ ...form, credits: Number(e.target.value) })}
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </div>
@@ -114,38 +103,26 @@ const handleSubmit = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    التصنيف
-                  </label>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">التصنيف</label>
                   <select
                     value={form.category}
-                    onChange={(e) =>
-                      setForm({ ...form, category: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, category: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     {Object.keys(CATEGORY_COLORS).map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
+                      <option key={c} value={c}>{c}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-foreground mb-1.5 block">
-                    الحالة
-                  </label>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">الحالة</label>
                   <select
                     value={form.status}
-                    onChange={(e) =>
-                      setForm({ ...form, status: e.target.value })
-                    }
+                    onChange={(e) => setForm({ ...form, status: e.target.value })}
                     className="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                   >
                     {Object.keys(STATUS_CONFIG).map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
+                      <option key={s} value={s}>{s}</option>
                     ))}
                   </select>
                 </div>
