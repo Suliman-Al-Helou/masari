@@ -32,6 +32,9 @@ export async function addCourse(course: {
 
 export async function updateCourse(id: string, updates: Partial<{
   name: string;
+  code: string;
+  credits: number;
+  category: string;
   status: string;
   grade: string;
 }>) {
@@ -111,8 +114,7 @@ export async function deleteTask(id: string) {
   if (error) throw error;
 }
 
-
-// ── Profile ──
+// ===== PROFILE =====
 export const getProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from('profiles')
@@ -129,6 +131,7 @@ export const updateProfile = async (userId: string, updates: {
   semester?: string;
   total_credits?: number;
   onboarded?: boolean;
+  degree_type?: string; // ✅ هاد كان ناقص
 }) => {
   const { data, error } = await supabase
     .from('profiles')
