@@ -206,7 +206,7 @@ export const STATUS_CONFIG = {
 export const CATEGORY_COLORS: Record<string, string> = {
   "متطلب جامعة": "bg-primary/10 text-primary",
   "متطلب كلية": "bg-info/10 text-info",
-  "متطلب تخصص": "bg-success/10 text-success",
+  "تخصص": "bg-success/10 text-success",
   اختياري: "bg-warning/10 text-warning",
 };
 

@@ -1,6 +1,7 @@
-import { CheckCircle, Clock, AlertCircle, BookOpen } from 'lucide-react';
+'use client';
+
 import { STATUS_CONFIG, CATEGORY_COLORS } from '@/lib/constants/dashboard';
-import Link from 'next/link';
+
 type Course = {
   id: string;
   name: string;
@@ -11,45 +12,45 @@ type Course = {
   grade: string | null;
 };
 
-const STATUS_ICONS = {
-  'مكتملة': CheckCircle,
-  'قيد الدراسة': Clock,
-  'متبقية': AlertCircle,
-  'مخطط لها': BookOpen,
-};
+interface Props {
+  course: Course;
+  onClick: (course: Course) => void;
+}
 
-export default function CourseCard({ course }: { course: Course }) {
+export default function CourseCard({ course, onClick }: Props) {
   const statusStyle = STATUS_CONFIG[course.status as keyof typeof STATUS_CONFIG] ?? STATUS_CONFIG['متبقية'];
-  const StatusIcon = STATUS_ICONS[course.status as keyof typeof STATUS_ICONS] ?? AlertCircle;
+  const categoryColor = CATEGORY_COLORS[course.category as keyof typeof CATEGORY_COLORS] ?? 'bg-gray-100 text-gray-600';
 
   return (
-   <Link 
-  href={`/course/${course.id}`}
-  className="block rounded-2xl bg-card border border-border/50 p-5 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer"
->
+    <button
+      onClick={() => onClick(course)}
+      className="group w-full text-right block rounded-2xl bg-card border border-border/50 p-5
+                 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30
+                 hover:shadow-lg hover:shadow-primary/10"
+    >
       <div className="flex items-start justify-between mb-3">
-        <div>
-          <h4 className="font-bold text-foreground">{course.name}</h4>
-          <p className="text-xs text-muted-foreground mt-0.5">{course.code}</p>
-        </div>
-        <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg ${statusStyle.color}`}>
-          <StatusIcon className="w-3 h-3" />
+        <span className={`text-[11px] px-2.5 py-1 rounded-lg ${statusStyle.color}`}>
           {course.status}
         </span>
+        <span className="text-xs text-muted-foreground font-mono" dir="ltr">{course.code}</span>
       </div>
-      <div className="flex items-center gap-2 mt-3 flex-wrap">
-        <span className="text-[10px] border border-border px-2 py-1 rounded-lg text-muted-foreground">
-          {course.credits} ساعات
+
+      <h4 className="font-bold text-foreground group-hover:text-primary transition-colors duration-300 mb-2 text-sm leading-snug">
+        {course.name}
+      </h4>
+
+      <div className="flex items-center justify-between mt-3">
+        <span className={`text-[11px] px-2 py-0.5 rounded-md ${categoryColor}`}>
+          {course.category}
         </span>
-        {course.category && (
-          <span className={`text-[10px] px-2 py-1 rounded-lg ${CATEGORY_COLORS[course.category] ?? ''}`}>
-            {course.category}
-          </span>
-        )}
+        <span className="text-xs text-muted-foreground">{course.credits} ساعات</span>
       </div>
+
       {course.grade && (
-        <p className="text-sm font-bold text-primary mt-3">العلامة: {course.grade}</p>
+        <div className="mt-2 text-xs font-bold text-primary text-left" dir="ltr">
+          {course.grade}
+        </div>
       )}
- </Link> 
+    </button>
   );
 }

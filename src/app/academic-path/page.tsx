@@ -6,8 +6,10 @@ import AcademicProgress from '@/components/academic-path/AcademicProgress';
 import AcademicFilters from '@/components/academic-path/AcademicFilters';
 import CourseCard from '@/components/academic-path/CourseCard';
 import AddCourseDialog from '@/components/academic-path/AddCourseDialog';
-import { getCourses, addCourse } from '@/lib/api';
+import CourseDetailModal from '@/components/academic-path/CourseDetailModal';
+import { getCourses, addCourse, updateCourse, deleteCourse } from '@/lib/api';
 import { useAuth } from '@/lib/context/AuthContext';
+import { useToast } from '@/lib/context/ToastContext';
 
 type Course = {
   id: string;
@@ -21,39 +23,52 @@ type Course = {
 
 export default function AcademicPathPage() {
   const { user } = useAuth();
+  const toast = useToast();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
 
-  // جلب البيانات من Supabase
+  // ── جلب المواد ──
   useEffect(() => {
     if (!user) return;
-
     const fetchCourses = async () => {
       try {
         setLoading(true);
         const data = await getCourses(user.id);
         setCourses(data ?? []);
-      } catch (error) {
-        console.error('خطأ في جلب المواد:', error);
+      } catch {
+        toast.error('خطأ', 'تعذّر تحميل المواد');
       } finally {
         setLoading(false);
       }
     };
-
     fetchCourses();
   }, [user]);
 
-  // إضافة مادة جديدة
+  // ── إضافة مادة ──
   const handleAdd = async (course: Omit<Course, 'id' | 'grade'>) => {
     if (!user) return;
     try {
       const newCourse = await addCourse({ ...course, user_id: user.id });
       setCourses(prev => [newCourse, ...prev]);
-    } catch (error) {
-      console.error('خطأ في إضافة المادة:', error);
+    } catch {
+      toast.error('خطأ', 'تعذّرت إضافة المادة');
     }
+  };
+
+  // ── تحديث مادة ──
+  const handleUpdate = (updated: Course) => {
+    setCourses(prev => prev.map(c => c.id === updated.id ? updated : c));
+    setSelectedCourse(null);
+  };
+
+  // ── حذف مادة ──
+  const handleDelete = (id: string) => {
+    setCourses(prev => prev.filter(c => c.id !== id));
+    setSelectedCourse(null);
   };
 
   const filtered = courses.filter(c => {
@@ -95,10 +110,22 @@ export default function AcademicPathPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(course => (
-            <CourseCard key={course.id} course={course} />
+            <CourseCard
+              key={course.id}
+              course={course}
+              onClick={setSelectedCourse}
+            />
           ))}
         </div>
       )}
+
+      {/* Modal */}
+      <CourseDetailModal
+        course={selectedCourse}
+        onClose={() => setSelectedCourse(null)}
+        onUpdate={handleUpdate}
+        onDelete={handleDelete}
+      />
 
     </div>
   );

@@ -1,7 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useRef, useEffect } from 'react';
-import { Menu, Bell, Settings, LogOut, User } from 'lucide-react';
+import { useState, useRef, useEffect } from "react";
+import { Menu, Bell, Settings, LogOut, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface TopBarProps {
   user: { full_name: string };
@@ -12,26 +13,32 @@ interface TopBarProps {
 export default function TopBar({ user, onMenuToggle, onLogout }: TopBarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
+  const router = useRouter();
   const initials = user?.full_name
-    ? user.full_name.split(' ').map((n: string) => n[0]).join('').slice(0, 2)
-    : '؟';
+    ? user.full_name
+        .split(" ")
+        .map((n: string) => n[0])
+        .join("")
+        .slice(0, 2)
+    : "؟";
 
   // أغلق الـ dropdown لو ضغط برا
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   return (
     <header className="sticky top-0 z-30 bg-card/80 backdrop-blur-xl border-b border-border/50">
       <div className="flex items-center justify-between px-4 lg:px-8 h-16">
-
         {/* Right side */}
         <div className="flex items-center gap-3">
           <button
@@ -56,7 +63,10 @@ export default function TopBar({ user, onMenuToggle, onLogout }: TopBarProps) {
           </button>
 
           {/* Avatar + Dropdown */}
-          <div className="relative pr-2 border-r border-border" ref={dropdownRef}>
+          <div
+            className="relative pr-2 border-r border-border"
+            ref={dropdownRef}
+          >
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
               className="flex items-center gap-2 p-1 rounded-xl hover:bg-muted transition-colors"
@@ -71,15 +81,18 @@ export default function TopBar({ user, onMenuToggle, onLogout }: TopBarProps) {
             {/* Dropdown Menu */}
             {dropdownOpen && (
               <div className="absolute left-0 top-12 w-52 bg-card border border-border rounded-2xl shadow-xl overflow-hidden z-50">
-                
                 {/* معلومات المستخدم */}
                 <div className="px-4 py-3 border-b border-border bg-muted/50">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                      <span className="text-primary-foreground text-xs font-bold">{initials}</span>
+                      <span className="text-primary-foreground text-xs font-bold">
+                        {initials}
+                      </span>
                     </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-bold text-foreground truncate">{user.full_name}</p>
+                      <p className="text-sm font-bold text-foreground truncate">
+                        {user.full_name}
+                      </p>
                       <p className="text-xs text-muted-foreground">طالب</p>
                     </div>
                   </div>
@@ -87,7 +100,13 @@ export default function TopBar({ user, onMenuToggle, onLogout }: TopBarProps) {
 
                 {/* الإعدادات */}
                 <div className="p-1">
-                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-xl transition-colors">
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      router.push("/profile");
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-xl transition-colors"
+                  >
                     <User className="w-4 h-4 text-muted-foreground" />
                     الملف الشخصي
                   </button>
@@ -100,19 +119,20 @@ export default function TopBar({ user, onMenuToggle, onLogout }: TopBarProps) {
                 {/* تسجيل الخروج */}
                 <div className="p-1 border-t border-border">
                   <button
-                    onClick={() => { setDropdownOpen(false); onLogout(); }}
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      onLogout();
+                    }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-xl transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     تسجيل الخروج
                   </button>
                 </div>
-
               </div>
             )}
           </div>
         </div>
-
       </div>
     </header>
   );
