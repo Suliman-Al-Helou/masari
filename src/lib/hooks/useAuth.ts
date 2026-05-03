@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { signOut } from '@/lib/auth';
 import type { User } from '@supabase/supabase-js';
 
 export function useAuth() {
@@ -9,13 +10,11 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // جلب المستخدم الحالي
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       setLoading(false);
     });
 
-    // متابعة التغييرات (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_, session) => {
         setUser(session?.user ?? null);
@@ -26,5 +25,10 @@ export function useAuth() {
     return () => subscription.unsubscribe();
   }, []);
 
-  return { user, loading };
+  const logout = async () => {
+    await signOut();
+    setUser(null);
+  };
+
+  return { user, loading, logout };
 }

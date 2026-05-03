@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { useAuth } from '@/lib/hooks/useAuth';
@@ -11,46 +11,53 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+const NO_LAYOUT_ROUTES = ['/login', '/verify-email', '/onboarding'];
+
 export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, isLoadingAuth, logout } = useAuth();
+  const { user, logout } = useAuth();
   const toast = useToast();
   const router = useRouter();
+  const pathname = usePathname();
+  const welcomedRef = useRef(false);
 
-  // لو لسا بتحمّل — لا تعرض شيء
-  if (isLoadingAuth) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-full border-4 border-primary border-t-transparent animate-spin" />
-          <p className="text-sm text-muted-foreground font-medium">جاري التحميل...</p>
-        </div>
-      </div>
-    );
-  }
+  const isNoLayout = NO_LAYOUT_ROUTES.includes(pathname);
+  const isLanding = pathname === '/' && !user;
 
-  // لو مش مسجّل — حوّله للـ login
-  if (!user) {
-    router.push('/login');
-    return null;
-  }
+  // Toast مرحبا — مرة وحدة بالجلسة
+  useEffect(() => {
+    if (!user) return;
+    if (welcomedRef.current) return;
+
+    const welcomed = sessionStorage.getItem('welcomed');
+    if (!welcomed) {
+      const name = user.user_metadata?.full_name?.split(' ')[0] || 'بك';
+      toast.success(`مرحباً ${name}! 👋`);
+      sessionStorage.setItem('welcomed', 'true');
+    }
+    welcomedRef.current = true;
+  }, [user]);
 
   const handleLogout = async () => {
+    sessionStorage.removeItem('welcomed'); // ← امسح عشان يرجع يرحب بعد دخول جديد
     await logout();
     toast.info('تم تسجيل الخروج', 'نراك قريباً 👋');
-    router.push('/login');
+    router.push('/');
   };
+
+  // صفحات بدون layout
+  if (isNoLayout || isLanding) return <>{children}</>;
 
   return (
     <div className="min-h-screen bg-background">
       <Sidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onLogout={handleLogout}
       />
-
       <div className="lg:mr-64 min-h-screen flex flex-col">
         <TopBar
-          user={{ full_name: user.user_metadata?.full_name || user.email || 'مستخدم' }}
+          user={{ full_name: user?.user_metadata?.full_name || user?.email || 'مستخدم' }}
           onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
           onLogout={handleLogout}
         />

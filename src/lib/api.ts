@@ -111,14 +111,28 @@ export async function deleteTask(id: string) {
   if (error) throw error;
 }
 
-// ===== PROFILE =====
-export async function getProfile(userId: string) {
+
+// ── Profile ──
+export const getProfile = async (userId: string) => {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', userId)
     .single();
+  return { data, error };
+};
 
-  if (error) throw error;
-  return data;
-}
+export const updateProfile = async (userId: string, updates: {
+  full_name?: string;
+  university?: string;
+  major?: string;
+  semester?: string;
+  total_credits?: number;
+  onboarded?: boolean;
+}) => {
+  const { data, error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId);
+  return { data, error };
+};

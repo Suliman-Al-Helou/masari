@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
 import { TaskForm, DEFAULT_FORM, TASK_TYPES, TASK_PRIORITIES } from '@/lib/constants/semester-plan';
-
+import { useToast } from '@/lib/context/ToastContext';
 interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -121,6 +121,7 @@ export default function AddTaskDialog({ open, onOpenChange, onAdd }: AddTaskDial
           >
             إضافة المهمة
           </button>
+          
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import "./globals.css";
 import AppLayout from "@/components/layout/AppLayout";
 import { AuthProvider } from "@/lib/context/AuthContext";
 import { ToastProvider } from "@/lib/context/ToastContext";
+import AuthGuard from "@/components/auth/AuthGuard";
 
 const tajawal = Tajawal({
   subsets: ["arabic"],
@@ -26,9 +27,11 @@ export default function RootLayout({
       <body className={`${tajawal.variable} font-sans`}>
         <AuthProvider>
           <ToastProvider>
-            <AppLayout>
-              {children}
-            </AppLayout>
+            <AuthGuard>
+              <AppLayout>
+                {children}
+              </AppLayout>
+            </AuthGuard>
           </ToastProvider>
         </AuthProvider>
       </body>
