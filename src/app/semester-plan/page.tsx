@@ -60,14 +60,30 @@ export default function SemesterPlanPage() {
 
   // ── تغيير الحالة ──
   const handleStatusChange = async (id: string, status: Task['status']) => {
-    // optimistic update
     setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
     try {
       await updateTask(id, { status });
     } catch {
-      // rollback
       setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status } : t));
       toast.error('خطأ', 'تعذّر تحديث الحالة');
+    }
+  };
+
+  // ── حذف مهمة ──
+  const handleDelete = async (id: string) => {
+    const deleted = tasks.find(t => t.id === id);
+    // optimistic: نحذف فوراً من الـ UI
+    setTasks(prev => prev.filter(t => t.id !== id));
+    try {
+      const { deleteTask } = await import('@/lib/api');
+      await deleteTask(id);
+      toast.success('تم الحذف', `تم حذف "${deleted?.title ?? 'المهمة'}"`);
+    } catch {
+      // rollback
+      if (deleted) setTasks(prev => [...prev, deleted].sort((a, b) =>
+        (a.due_date ?? '').localeCompare(b.due_date ?? '')
+      ));
+      toast.error('خطأ', 'تعذّر حذف المهمة');
     }
   };
 
@@ -85,6 +101,7 @@ export default function SemesterPlanPage() {
         tasks={filteredTasks}
         loading={loading}
         onStatusChange={handleStatusChange}
+        onDelete={handleDelete}
       />
       <AddTaskDialog
         open={addOpen}

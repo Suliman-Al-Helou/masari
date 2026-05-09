@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Bell, CheckCircle2, Clock, ChevronDown, ChevronUp, X } from 'lucide-react';
-import { URGENT_TASKS } from '@/lib/constants/dashboard';
+import { updateTask } from '@/lib/api';
 
 type Task = {
   id: string;
@@ -25,35 +25,44 @@ function formatTimeLeft(hours: number) {
   return `${Math.floor(hours / 24)} يوم`;
 }
 
-export default function UrgentTasksAlert() {
-  const [tasks, setTasks] = useState<Task[]>(URGENT_TASKS);
+interface UrgentTasksAlertProps {
+  urgentTasks: Task[];
+}
+
+export default function UrgentTasksAlert({ urgentTasks: initialTasks }: UrgentTasksAlertProps) {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
-  const urgentTasks = tasks.filter(t => {
-    if (t.priority !== 'عالي') return false;
-    if (t.status === 'مكتمل') return false;
-    const hours = getHoursUntilDue(t.due_date);
-    return hours !== null && hours <= 48;
-  });
+  // تحديث المهام عند تغيّر الـ props (مثلاً بعد refresh)
+  // نستخدم key-based reset بدلاً من useEffect لتفادي تعقيدات sync
+  const visible = tasks.filter(t => t.status !== 'مكتمل');
 
-  if (dismissed || urgentTasks.length === 0) return null;
+  if (dismissed || visible.length === 0) return null;
 
-  const handleDone = (id: string) => {
-    setTasks(prev =>
-      prev.map(t => t.id === id ? { ...t, status: 'مكتمل' } : t)
-    );
+  const handleDone = async (id: string) => {
+    setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'مكتمل' } : t));
+    try {
+      await updateTask(id, { status: 'مكتمل' });
+    } catch {
+      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: 'pending' } : t));
+    }
   };
 
-  const handlePostpone = (id: string) => {
-    setTasks(prev =>
-      prev.map(t => {
-        if (t.id !== id) return t;
-        const current = t.due_date ? new Date(t.due_date) : new Date();
-        current.setDate(current.getDate() + 2);
-        return { ...t, due_date: current.toISOString() };
-      })
-    );
+  const handlePostpone = async (id: string) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id !== id) return t;
+      const current = t.due_date ? new Date(t.due_date) : new Date();
+      current.setDate(current.getDate() + 2);
+      return { ...t, due_date: current.toISOString() };
+    }));
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    const newDate = task.due_date ? new Date(task.due_date) : new Date();
+    newDate.setDate(newDate.getDate() + 2);
+    try {
+      await updateTask(id, { due_date: newDate.toISOString().split('T')[0] });
+    } catch { /* silent — الـ UI يعكس التغيير والـ DB يتزامن لاحقاً */ }
   };
 
   return (
@@ -68,13 +77,13 @@ export default function UrgentTasksAlert() {
           <div className="relative">
             <Bell className="w-5 h-5 text-destructive" />
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-destructive text-white text-[8px] font-bold rounded-full flex items-center justify-center">
-              {urgentTasks.length}
+              {visible.length}
             </span>
           </div>
           <span className="font-bold text-destructive text-sm">
-            {urgentTasks.length === 1
-              ? 'مهمة عاجلة تستحق خلال 48 ساعة'
-              : `${urgentTasks.length} مهام عاجلة خلال 48 ساعة`}
+            {visible.length === 1
+              ? 'مهمة عاجلة خلال 48 ساعة'
+              : `${visible.length} مهام عاجلة خلال 48 ساعة`}
           </span>
           {collapsed
             ? <ChevronDown className="w-4 h-4 text-destructive mr-auto" />
@@ -88,10 +97,9 @@ export default function UrgentTasksAlert() {
         </button>
       </div>
 
-      {/* Task list */}
       {!collapsed && (
         <div className="px-4 pb-4 space-y-2">
-          {urgentTasks.map(task => {
+          {visible.map(task => {
             const hours = getHoursUntilDue(task.due_date);
             const isOverdue = hours !== null && hours < 0;
             return (
@@ -109,7 +117,7 @@ export default function UrgentTasksAlert() {
                     )}
                     <span className={`text-[10px] flex items-center gap-0.5 font-medium ${isOverdue ? 'text-destructive' : 'text-amber-600'}`}>
                       <Clock className="w-3 h-3" />
-                      {isOverdue ? 'انتهى الموعد!' : `متبقي ${formatTimeLeft(hours!)}`}
+                      {hours !== null ? (isOverdue ? 'انتهى الموعد!' : `متبقي ${formatTimeLeft(hours)}`) : ''}
                     </span>
                   </div>
                 </div>

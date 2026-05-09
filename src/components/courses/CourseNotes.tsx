@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { StickyNote, Plus, Tag, Link2, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { StickyNote, Plus, Tag, Link2, X, Loader2 } from 'lucide-react';
 import NoteCard from './NoteCard';
-import { MOCK_NOTES, type Note } from '@/lib/constants/dashboard';
+import { getNotesByCourse, addNote, deleteNote } from '@/lib/api';
+import { useAuth } from '@/lib/hooks/useAuth';
+import type { Note } from '@/lib/constants/dashboard';
 
 interface Props {
   courseCode: string;
@@ -19,10 +21,30 @@ const EMPTY_FORM = {
 };
 
 export default function CourseNotes({ courseCode, courseName }: Props) {
-  const [notes, setNotes] = useState<Note[]>(MOCK_NOTES[courseCode] ?? []);
+  const { user } = useAuth();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // جلب الملاحظات من Supabase
+  const fetchNotes = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getNotesByCourse(user.id, courseCode);
+      setNotes(data as Note[]);
+    } catch {
+      setError('تعذّر تحميل الملاحظات');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, courseCode]);
+
+  useEffect(() => { fetchNotes(); }, [fetchNotes]);
 
   const addTag = () => {
     const trimmed = form.tagInput.trim();
@@ -31,34 +53,43 @@ export default function CourseNotes({ courseCode, courseName }: Props) {
     }
   };
 
-  const removeTag = (t: string) => {
+  const removeTag = (t: string) =>
     setForm(prev => ({ ...prev, tags: prev.tags.filter(tag => tag !== t) }));
-  };
 
-  const handleSubmit = () => {
-    if (!form.title) return;
+  const handleSubmit = async () => {
+    if (!form.title || !user) return;
     setSaving(true);
-
-    const newNote: Note = {
-      id: Date.now().toString(),
-      title: form.title,
-      content: form.link
-        ? form.content + (form.content ? '\n\n' : '') + `[رابط]: ${form.link}`
-        : form.content,
-      course_code: courseCode,
-      tags: form.tags,
-      link: form.link || null,
-      created_date: new Date().toISOString().split('T')[0],
-    };
-
-    setNotes(prev => [newNote, ...prev]);
-    setForm(EMPTY_FORM);
-    setShowForm(false);
-    setSaving(false);
+    setError(null);
+    try {
+      const saved = await addNote({
+        user_id: user.id,
+        course_code: courseCode,
+        title: form.title,
+        content: form.link
+          ? form.content + (form.content ? '\n\n' : '') + `[رابط]: ${form.link}`
+          : form.content,
+        tags: form.tags,
+        link: form.link || null,
+      });
+      setNotes(prev => [saved as Note, ...prev]);
+      setForm(EMPTY_FORM);
+      setShowForm(false);
+    } catch {
+      setError('تعذّر حفظ الملاحظة، حاول مجدداً');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    // نحذف من الـ UI فوراً (optimistic) ثم نرسل لـ Supabase
     setNotes(prev => prev.filter(n => n.id !== id));
+    try {
+      await deleteNote(id);
+    } catch {
+      // نرجع الملاحظة إذا فشل الحذف
+      fetchNotes();
+    }
   };
 
   return (
@@ -83,6 +114,14 @@ export default function CourseNotes({ courseCode, courseName }: Props) {
           ملاحظة جديدة
         </button>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-2 bg-destructive/10 text-destructive text-sm px-4 py-3 rounded-xl border border-destructive/20">
+          <X className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       {/* Form */}
       {showForm && (
@@ -110,11 +149,9 @@ export default function CourseNotes({ courseCode, courseName }: Props) {
             />
           </div>
 
-          {/* Tags */}
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
-              <Tag className="w-3.5 h-3.5" />
-              الوسوم
+              <Tag className="w-3.5 h-3.5" />الوسوم
             </label>
             <div className="flex gap-2">
               <input
@@ -140,19 +177,16 @@ export default function CourseNotes({ courseCode, courseName }: Props) {
                     onClick={() => removeTag(t)}
                     className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-lg flex items-center gap-1 cursor-pointer hover:bg-primary/20 transition-colors"
                   >
-                    {t}
-                    <X className="w-3 h-3" />
+                    {t}<X className="w-3 h-3" />
                   </span>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Link */}
           <div>
             <label className="text-sm font-medium text-foreground mb-1.5 flex items-center gap-1.5">
-              <Link2 className="w-3.5 h-3.5" />
-              رابط خارجي (اختياري)
+              <Link2 className="w-3.5 h-3.5" />رابط خارجي (اختياري)
             </label>
             <input
               type="text"
@@ -172,13 +206,13 @@ export default function CourseNotes({ courseCode, courseName }: Props) {
             >
               {saving ? (
                 <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <Loader2 className="w-4 h-4 animate-spin" />
                   جاري الحفظ...
                 </span>
               ) : 'حفظ الملاحظة'}
             </button>
             <button
-              onClick={() => setShowForm(false)}
+              onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}
               className="px-4 py-2.5 rounded-xl border border-border text-sm hover:bg-muted transition-colors"
             >
               إلغاء
@@ -187,12 +221,16 @@ export default function CourseNotes({ courseCode, courseName }: Props) {
         </div>
       )}
 
-      {/* Notes list */}
-      {notes.length === 0 ? (
+      {/* Loading */}
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-8 h-8 text-primary/40 animate-spin" />
+        </div>
+      ) : notes.length === 0 ? (
         <div className="text-center py-16 rounded-2xl border border-dashed border-border bg-muted/30">
           <StickyNote className="w-10 h-10 text-muted-foreground/30 mx-auto mb-3" />
           <p className="text-muted-foreground text-sm">لا توجد ملاحظات بعد</p>
-          <p className="text-muted-foreground/60 text-xs mt-1">ابدأ بإضافة أولى ملاحظاتك لهذه المادة</p>
+          <p className="text-muted-foreground/60 text-xs mt-1">ابدأ بإضافة أولى ملاحظاتك لمادة {courseName}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

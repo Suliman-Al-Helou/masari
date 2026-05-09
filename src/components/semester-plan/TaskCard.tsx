@@ -1,16 +1,15 @@
 'use client';
 
-// src/components/semester-plan/TaskCard.tsx
-
-import { Clock, CheckCircle } from 'lucide-react';
+import { Clock, CheckCircle, Trash2 } from 'lucide-react';
 import { Task, TYPE_ICONS, STATUS_STYLES, PRIORITY_STYLES, nextStatus } from '@/lib/constants/semester-plan';
 
 interface TaskCardProps {
   task: Task;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onDelete: (id: string) => void;
 }
 
-export default function TaskCard({ task, onStatusChange }: TaskCardProps) {
+export default function TaskCard({ task, onStatusChange, onDelete }: TaskCardProps) {
   const Icon = TYPE_ICONS[task.type] ?? TYPE_ICONS['أخرى'];
   const isDone = task.status === 'مكتمل';
 
@@ -18,7 +17,7 @@ export default function TaskCard({ task, onStatusChange }: TaskCardProps) {
     <div className="rounded-2xl bg-card border border-border/50 p-4 hover:shadow-md transition-all duration-200">
       <div className="flex items-center gap-4">
 
-        {/* Status toggle button */}
+        {/* Status toggle */}
         <button
           onClick={() => onStatusChange(task.id, nextStatus(task.status))}
           className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
@@ -27,10 +26,7 @@ export default function TaskCard({ task, onStatusChange }: TaskCardProps) {
               : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'
           }`}
         >
-          {isDone
-            ? <CheckCircle className="w-5 h-5" />
-            : <Icon className="w-5 h-5" />
-          }
+          {isDone ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
         </button>
 
         {/* Content */}
@@ -58,7 +54,7 @@ export default function TaskCard({ task, onStatusChange }: TaskCardProps) {
           </div>
         </div>
 
-        {/* Badges */}
+        {/* Badges + Delete */}
         <div className="flex items-center gap-2 shrink-0">
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${PRIORITY_STYLES[task.priority]}`}>
             {task.priority}
@@ -66,6 +62,13 @@ export default function TaskCard({ task, onStatusChange }: TaskCardProps) {
           <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${STATUS_STYLES[task.status]}`}>
             {task.status}
           </span>
+          <button
+            onClick={() => onDelete(task.id)}
+            className="p-1.5 rounded-lg text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors"
+            title="حذف المهمة"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
 
       </div>

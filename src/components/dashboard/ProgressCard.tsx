@@ -1,7 +1,12 @@
 import { TrendingUp } from 'lucide-react';
-import { PROGRESS } from '@/lib/constants/dashboard';
 
-export default function ProgressCard() {
+interface ProgressCardProps {
+  percent: number;
+  completedCredits: number;
+  totalCredits: number;
+}
+
+export default function ProgressCard({ percent, completedCredits, totalCredits }: ProgressCardProps) {
   return (
     <div className="rounded-2xl bg-card border border-border/50 p-5">
       <div className="flex items-center justify-between mb-4">
@@ -11,20 +16,21 @@ export default function ProgressCard() {
           </div>
           <h3 className="font-bold text-foreground">تقدمك في المسار</h3>
         </div>
-        <span className="text-sm font-bold text-primary">{PROGRESS}%</span>
+        <span className="text-sm font-bold text-primary">{percent}%</span>
       </div>
 
-      {/* Progress bar بدون مكتبة */}
       <div className="h-3 bg-muted rounded-full overflow-hidden">
         <div
-          className="h-full bg-primary rounded-full transition-all duration-500"
-          style={{ width: `${PROGRESS}%` }}
+          className="h-full bg-primary rounded-full transition-all duration-700"
+          style={{ width: `${percent}%` }}
         />
       </div>
 
       <div className="flex items-center justify-between mt-3">
-        <span className="text-xs text-muted-foreground">المادة التالية: خطط مرحلية</span>
-        <span className="text-xs text-muted-foreground">{PROGRESS}% مكتمل</span>
+        <span className="text-xs text-muted-foreground">
+          {completedCredits} من {totalCredits} ساعة مكتملة
+        </span>
+        <span className="text-xs text-muted-foreground">{percent}% مكتمل</span>
       </div>
     </div>
   );

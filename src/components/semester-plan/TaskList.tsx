@@ -1,7 +1,5 @@
 'use client';
 
-// src/components/semester-plan/TaskList.tsx
-
 import { Calendar } from 'lucide-react';
 import { Task } from '@/lib/constants/semester-plan';
 import TaskCard from './TaskCard';
@@ -10,6 +8,7 @@ interface TaskListProps {
   tasks: Task[];
   loading: boolean;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onDelete: (id: string) => void;
 }
 
 function LoadingSpinner() {
@@ -29,14 +28,19 @@ function EmptyState() {
   );
 }
 
-export default function TaskList({ tasks, loading, onStatusChange }: TaskListProps) {
+export default function TaskList({ tasks, loading, onStatusChange, onDelete }: TaskListProps) {
   if (loading) return <LoadingSpinner />;
   if (tasks.length === 0) return <EmptyState />;
 
   return (
     <div className="space-y-3">
       {tasks.map(task => (
-        <TaskCard key={task.id} task={task} onStatusChange={onStatusChange} />
+        <TaskCard
+          key={task.id}
+          task={task}
+          onStatusChange={onStatusChange}
+          onDelete={onDelete}
+        />
       ))}
     </div>
   );

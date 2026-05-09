@@ -1,34 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-import { signOut } from '@/lib/auth';
-import type { User } from '@supabase/supabase-js';
+// useAuth هو shortcut لـ AuthContext — single source of truth
+// loading يُعيد isLoadingAuth ليتوافق مع كل المكونات الموجودة
+import { useAuth as useAuthContext } from '@/lib/context/AuthContext';
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const logout = async () => {
-    await signOut();
-    setUser(null);
+  const { user, isAuthenticated, isLoadingAuth, logout } = useAuthContext();
+  return {
+    user,
+    loading: isLoadingAuth,   // alias للتوافق مع المكونات القديمة
+    isAuthenticated,
+    logout,
   };
-
-  return { user, loading, logout };
 }

@@ -2,9 +2,22 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowRight, BookOpen, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { MOCK_COURSES_MAP, STATUS_CONFIG, CATEGORY_COLORS } from '@/lib/constants/dashboard';
+import { useState, useEffect } from 'react';
+import { ArrowRight, BookOpen, CheckCircle, Clock, AlertCircle, Loader2 } from 'lucide-react';
+import { STATUS_CONFIG, CATEGORY_COLORS } from '@/lib/constants/dashboard';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/lib/hooks/useAuth';
 import CourseNotes from '@/components/courses/CourseNotes';
+
+type Course = {
+  id: string;
+  name: string;
+  code: string;
+  credits: number;
+  category: string;
+  status: string;
+  grade: string | null;
+};
 
 const STATUS_ICONS = {
   'مكتملة': CheckCircle,
@@ -15,12 +28,40 @@ const STATUS_ICONS = {
 
 export default function CourseDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const course = MOCK_COURSES_MAP[id];
+  const { user } = useAuth();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!course) {
+  useEffect(() => {
+    if (!user || !id) return;
+    async function fetch() {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', id)
+        .eq('user_id', user!.id)
+        .single();
+
+      if (error || !data) setNotFound(true);
+      else setCourse(data as Course);
+      setLoading(false);
+    }
+    fetch();
+  }, [user, id]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-40">
+        <Loader2 className="w-8 h-8 text-primary/40 animate-spin" />
+      </div>
+    );
+  }
+
+  if (notFound || !course) {
     return (
       <div className="text-center py-40">
-        <p className="text-muted-foreground">المادة غير موجودة</p>
+        <p className="text-muted-foreground">المادة غير موجودة أو لا تملك صلاحية الوصول إليها</p>
         <Link
           href="/academic-path"
           className="inline-flex items-center gap-2 mt-4 border border-border px-4 py-2 rounded-xl text-sm hover:bg-muted transition-colors"
@@ -40,7 +81,6 @@ export default function CourseDetailPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
 
-      {/* Back */}
       <Link
         href="/academic-path"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -79,7 +119,7 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* Notes */}
+      {/* Notes — Supabase */}
       <CourseNotes courseCode={course.code} courseName={course.name} />
 
     </div>

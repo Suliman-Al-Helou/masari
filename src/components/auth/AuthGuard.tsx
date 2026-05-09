@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { getProfile } from "@/lib/api";
 
-const PUBLIC_ROUTES = ["/login", "/verify-email"];
+const PUBLIC_ROUTES = ["/login", "/verify-email", "/"];
 const ONBOARDING_ROUTE = "/onboarding";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -34,7 +34,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     // مسجّل — تحقق هل أكمل الـ onboarding
     if (user && !isOnboarding && !isPublic) {
       getProfile(user.id).then(({ data, error }) => {
-        console.log("Profile data:", data, "Error:", error); // للتشخيص
         if (!error && data && data.onboarded !== true) {
           router.push("/onboarding");
         }

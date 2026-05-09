@@ -1,9 +1,36 @@
-import { QUICK_STATS } from '@/lib/constants/dashboard';
+import { BookOpen, Target, Calendar } from 'lucide-react';
 
-export default function QuickStats() {
+interface QuickStatsProps {
+  activeCourses: number;
+  pendingTasks: number;
+  daysToExam: number | null;
+}
+
+export default function QuickStats({ activeCourses, pendingTasks, daysToExam }: QuickStatsProps) {
+  const stats = [
+    {
+      label: 'مادة مسجلة',
+      value: String(activeCourses),
+      icon: BookOpen,
+      color: 'bg-primary/10 text-primary',
+    },
+    {
+      label: 'واجبات قيد الانتظار',
+      value: String(pendingTasks),
+      icon: Target,
+      color: 'bg-warning/10 text-warning',
+    },
+    {
+      label: 'يوم حتى الامتحان',
+      value: daysToExam !== null ? String(daysToExam) : '—',
+      icon: Calendar,
+      color: 'bg-info/10 text-info',
+    },
+  ];
+
   return (
     <div className="grid grid-cols-3 gap-3">
-      {QUICK_STATS.map((stat) => (
+      {stats.map((stat) => (
         <div
           key={stat.label}
           className="rounded-2xl bg-card border border-border/50 p-4 text-center"
