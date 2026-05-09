@@ -161,7 +161,7 @@ export async function deleteNote(id: string) {
 export async function getDashboardStats(userId: string) {
   // نجلب المواد والمهام بشكل متوازٍ
   const [coursesRes, tasksRes] = await Promise.all([
-    supabase.from('courses').select('id, status, credits, grade').eq('user_id', userId),
+   supabase.from('courses').select('id, name, code, status, credits, grade').eq('user_id', userId),
     supabase.from('tasks').select('id, status, priority, due_date, title, type, course_code').eq('user_id', userId),
   ]);
 

@@ -41,7 +41,7 @@ export default function HomePage() {
               <QuickStats
                 activeCourses={data?.activeCourses?.length ?? 0}
                 pendingTasks={data?.pendingTasksCount ?? 0}
-                daysToExam={data?.daysToExam}
+                daysToExam={data?.daysToExam ?? null}
               />
               <ProgressCard
                 percent={data?.progressPercent ?? 0}
