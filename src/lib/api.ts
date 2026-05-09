@@ -318,22 +318,18 @@ export type StudentProfile = {
 /** جلب الطلاب من نفس التخصص + البحث بالاسم */
 export async function getNetworkStudents(
   currentUserId: string,
-  options: { major?: string; search?: string } = {}
+  options: { major?: string; search?: string; university?: string } = {}
 ): Promise<StudentProfile[]> {
   let query = supabase
     .from('profiles')
     .select('id, full_name, major, university, semester, show_in_network')
     .eq('show_in_network', true)
-    .neq('id', currentUserId) // لا تُظهر المستخدم لنفسه
+    .neq('id', currentUserId)
     .order('full_name', { ascending: true });
 
-  if (options.major) {
-    query = query.eq('major', options.major);
-  }
-
-  if (options.search && options.search.trim()) {
-    query = query.ilike('full_name', `%${options.search.trim()}%`);
-  }
+  if (options.university) query = query.eq('university', options.university);
+  if (options.major) query = query.eq('major', options.major);
+  if (options.search?.trim()) query = query.ilike('full_name', `%${options.search.trim()}%`);
 
   const { data, error } = await query.limit(50);
   if (error) throw error;

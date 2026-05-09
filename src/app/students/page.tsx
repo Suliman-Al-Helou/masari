@@ -11,6 +11,7 @@ import MajorFilter from '@/components/students/MajorFilter';
 import InviteDialog from '@/components/students/InviteDialog';
 import ChatPanel from '@/components/students/ChatPanel';
 
+
 export default function StudentsPage() {
   const { user } = useAuth();
 
@@ -38,36 +39,37 @@ export default function StudentsPage() {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
+const [myUniversity, setMyUniversity] = useState<string | null>(null);
   // جلب ملف المستخدم لمعرفة تخصصه
-  useEffect(() => {
-    if (!user) return;
-    getProfile(user.id).then(({ data }) => {
-      if (data?.major) {
-        setMyMajor(data.major);
-        // افتراضياً عرض نفس التخصص
-        setMajorFilter(data.major);
-      }
-    });
-  }, [user]);
+useEffect(() => {
+  if (!user) return;
+  getProfile(user.id).then(({ data }) => {
+    if (data?.major) {
+      setMyMajor(data.major);
+      setMajorFilter(data.major);
+    }
+    if (data?.university) setMyUniversity(data.university);
+  });
+}, [user]);
 
   // جلب الطلاب من Supabase
-  const fetchStudents = useCallback(async () => {
-    if (!user) return;
-    setLoading(true);
-    try {
-      const data = await getNetworkStudents(user.id, {
-        major: majorFilter ?? undefined,
-        search: search || undefined,
-      });
-      setStudents(data as Student[]);
-    } catch {
-      setStudents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, majorFilter, search]);
-
+const fetchStudents = useCallback(async () => {
+  if (!user) return;
+  if (!myUniversity) return; // ✅ انتظر حتى تتحمل الجامعة
+  setLoading(true);
+  try {
+    const data = await getNetworkStudents(user.id, {
+      major: majorFilter ?? undefined,
+      university: myUniversity ?? undefined,
+      search: search || undefined,
+    });
+    setStudents(data as Student[]);
+  } catch {
+    setStudents([]);
+  } finally {
+    setLoading(false);
+  }
+}, [user, majorFilter, myUniversity, search]);
   useEffect(() => {
     const timer = setTimeout(fetchStudents, search ? 400 : 0); // debounce للبحث
     return () => clearTimeout(timer);
