@@ -5,16 +5,13 @@ import { logger } from "@/lib/logger";
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requirePermission(PERMISSION.USERS_MANAGE);
   if (!auth.ok) return auth.response;
-
+  const { id } = await params;
   try {
-    const { error } = await dbAdmin
-      .from("admin_courses")
-      .delete()
-      .eq("id", params.id);
+    const { error } = await dbAdmin.from("admin_courses").delete().eq("id", id);
 
     if (error) throw new Error(error.message);
 
