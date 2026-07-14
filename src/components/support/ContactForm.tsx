@@ -1,34 +1,46 @@
-'use client';
+"use client";
 
-// src/components/support/ContactForm.tsx
-
-import { useState } from 'react';
-import { Send, HeadphonesIcon } from 'lucide-react';
-import { DEFAULT_FORM, SupportForm } from '@/lib/constants/support';
-import CategoryPicker from './CategoryPicker';
-
+import { useState } from "react";
+import { Send, HeadphonesIcon } from "lucide-react";
+import { DEFAULT_SUPPORT_FORM } from "@/lib/constants/support";
+import CategoryPicker from "./CategoryPicker";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { supabase } from "@/lib/db/client";
+import type { SupportForm } from "@/types";
 export default function ContactForm() {
-  const [form, setForm] = useState<SupportForm>(DEFAULT_FORM);
+  const [form, setForm] = useState<SupportForm>(DEFAULT_SUPPORT_FORM);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const isValid = form.subject.trim() && form.message.trim() && form.category;
 
   const handleSend = async () => {
-    if (!isValid) return;
+    if (!isValid || !user) return;
     setSending(true);
+    setError(null);
 
-    // TODO: استبدل بـ API call حقيقي عند ربط الـ backend
-    await new Promise(r => setTimeout(r, 1000)); // محاكاة الإرسال
-    console.log('Support request:', form);
+    const { error: dbError } = await supabase.from("support_requests").insert({
+      user_id: user.id,
+      category: form.category,
+      subject: form.subject.trim(),
+      message: form.message.trim(),
+    });
 
-    setSent(true);
-    setForm(DEFAULT_FORM);
     setSending(false);
-    setTimeout(() => setSent(false), 4000);
+
+    if (dbError) {
+      setError("حدث خطأ أثناء الإرسال، حاول مجدداً");
+    } else {
+      setSent(true);
+      setForm(DEFAULT_SUPPORT_FORM);
+      setTimeout(() => setSent(false), 4000);
+    }
   };
 
-  const inputClass = "w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
+  const inputClass =
+    "w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all";
 
   return (
     <div>
@@ -40,7 +52,7 @@ export default function ContactForm() {
       <div className="rounded-2xl bg-card border border-border/50 p-6 space-y-5">
         <CategoryPicker
           selected={form.category}
-          onChange={cat => setForm({ ...form, category: cat })}
+          onChange={(cat) => setForm({ ...form, category: cat })}
         />
 
         <div className="space-y-1.5">
@@ -48,7 +60,7 @@ export default function ContactForm() {
           <input
             className={inputClass}
             value={form.subject}
-            onChange={e => setForm({ ...form, subject: e.target.value })}
+            onChange={(e) => setForm({ ...form, subject: e.target.value })}
             placeholder="اكتب موضوع الطلب..."
           />
         </div>
@@ -58,16 +70,21 @@ export default function ContactForm() {
           <textarea
             className={`${inputClass} resize-none`}
             value={form.message}
-            onChange={e => setForm({ ...form, message: e.target.value })}
+            onChange={(e) => setForm({ ...form, message: e.target.value })}
             placeholder="اكتب تفاصيل طلبك هنا..."
             rows={5}
           />
         </div>
 
-        {/* Success message */}
         {sent && (
           <div className="px-4 py-3 rounded-xl bg-success/10 text-success text-sm text-center font-medium">
             ✓ تم إرسال طلب الدعم بنجاح، سنتواصل معك قريباً
+          </div>
+        )}
+
+        {error && (
+          <div className="px-4 py-3 rounded-xl bg-destructive/10 text-destructive text-sm text-center font-medium">
+            {error}
           </div>
         )}
 
@@ -81,7 +98,7 @@ export default function ContactForm() {
           ) : (
             <Send className="w-4 h-4" />
           )}
-          {sending ? 'جاري الإرسال...' : 'إرسال'}
+          {sending ? "جاري الإرسال..." : "إرسال"}
         </button>
       </div>
     </div>

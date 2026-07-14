@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { Sun, Moon } from "lucide-react";
+import { useTheme } from "@/lib/context/ThemeContext";
 
 const FEATURES = [
   {
@@ -50,6 +52,7 @@ const TESTIMONIALS = [
 export default function LandingPage() {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isDark, toggleTheme } = useTheme();
 
   return (
     <div className="land-root" dir="rtl">
@@ -68,6 +71,18 @@ export default function LandingPage() {
           </div>
 
           <div className="land-nav-actions">
+
+          <button
+            onClick={toggleTheme}
+            title={isDark ? "الوضع النهاري" : "الوضع الليلي"}
+          >
+            {isDark ? (
+              <Sun className="w-5 h-5 text-amber-400" />
+            ) : (
+              <Moon className="w-5 h-5 text-muted-foreground" />
+            )}
+          </button>
+
             <button
               onClick={() => router.push("/login")}
               className="land-btn-ghost"

@@ -1,0 +1,21 @@
+- When You Start Project Start To Add : 
+
+- For Protection and safety
+- Environment Variables
+  - .env.local
+  - .env.example
+  - .gitignore
+
+- src/config/env.ts
+  for Check Environment Variables Before Start The App
+
+- Middleware 
+  - middleware.ts 
+
+-.gitignore
+
+- auth.ts - src/lib/auth.ts 
+ - Use For Chek IF the passwor & email is right ?
+
+- prisma.ts / lib
+ - use for not wright sql code 

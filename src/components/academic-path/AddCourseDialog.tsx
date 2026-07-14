@@ -13,6 +13,7 @@ type Course = {
   category: string;
   status: string;
   grade: string | null;
+   semester: string;
 };
 
 const EMPTY_FORM = {
@@ -21,25 +22,25 @@ const EMPTY_FORM = {
   credits: 3,
   category: "متطلب تخصص",
   status: "متبقية",
+    semester: "الفصل الأول", 
 };
 
 interface Props {
-  // ✅ شلنا "grade" من الـ Omit عشان نقدر نمرر grade: null
+  semester: string;          // ← أضف هاد
   onAdd: (course: Omit<Course, "id">) => void;
 }
-
-export default function AddCourseDialog({ onAdd }: Props) {
+export default function AddCourseDialog({ onAdd, semester }: Props) {
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const toast = useToast();
+  const [form, setForm] = useState({ ...EMPTY_FORM, semester });
+  const {Success ,Error} = useToast();
 
   const handleSubmit = () => {
     if (!form.name || !form.code) {
-      toast.error('بيانات ناقصة', 'يرجى تعبئة اسم المادة والرمز');
+      Error('بيانات ناقصة', 'يرجى تعبئة اسم المادة والرمز');
       return;
     }
     onAdd({ ...form, grade: null });
-    toast.success('تمت إضافة المادة', `تم إضافة ${form.name} إلى مسارك الدراسي`);
+    Success('تمت إضافة المادة', `تم إضافة ${form.name} إلى مسارك الدراسي`);
     setForm(EMPTY_FORM);
     setOpen(false);
   };

@@ -9,7 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { format } from "date-fns";
-import type { Note } from "@/lib/constants/dashboard";
+import type { Note } from "@/types";
 
 function extractLink(content: string) {
   const match = content.match(/\[رابط\]: (https?:\/\/\S+)/);

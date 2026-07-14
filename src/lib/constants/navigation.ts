@@ -1,14 +1,99 @@
-// src/lib/constants/navigation.ts
-import { Home, BookOpen, Calendar, Users, HeadphonesIcon } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  GraduationCap,
+  HeadphonesIcon,
+  Home,
+  LayoutDashboard,
+  PlusCircle,
+  Star,
+  Users,
+} from "lucide-react";
 
-export const NAV_ITEMS = [
-  { label: "الرئيسية", icon: Home, path: "/" },
-  { label: "المسار الدراسي", icon: BookOpen, path: "/academic-path" },
-  { label: "مخطط الفصل", icon: Calendar, path: "/semester-plan" },
-  { label: "شبكة الطلاب", icon: Users, path: "/students" },
-  { label: "مركز الدعم", icon: HeadphonesIcon, path: "/support" },
-];
+import type { NavigationGroup } from "@/types/navigation";
 
+export const STUDENT_NAV_GROUPS = [
+  {
+    label: "الرئيسية",
+    items: [
+      {
+        label: "الرئيسية",
+        href: "/",
+        icon: Home,
+        match: "exact",
+      },
+      {
+        label: "المسار الدراسي",
+        href: "/academic-path",
+        icon: BookOpen,
+        match: "prefix",
+      },
+      {
+        label: "مخطط الفصل",
+        href: "/semester-plan",
+        icon: Calendar,
+        match: "prefix",
+      },
+      {
+        label: "شبكة الطلاب",
+        href: "/students",
+        icon: GraduationCap,
+        match: "prefix",
+      },
+      {
+        label: "مركز الدعم",
+        href: "/support",
+        icon: HeadphonesIcon,
+        match: "prefix",
+      },
+    ],
+  },
+] satisfies readonly NavigationGroup[];
+
+export const ADMIN_NAV_GROUPS = [
+  {
+    items: [
+      {
+        label: "نظرة عامة",
+        href: "/admin",
+        icon: LayoutDashboard,
+        match: "exact",
+      },
+      {
+        label: "المستخدمون",
+        href: "/admin/users",
+        icon: Users,
+        match: "prefix",
+      },
+    ],
+  },
+  {
+    label: "المحتوى",
+    items: [
+      {
+        label: "المواد",
+        href: "/admin/courses",
+        icon: PlusCircle,
+        match: "prefix",
+      },
+      {
+        label: "الدكاترة",
+        href: "/admin/doctors",
+        icon: PlusCircle,
+        match: "prefix",
+      },
+      {
+        label: "التقييمات",
+        href: "/admin/reviews",
+        icon: Star,
+        match: "prefix",
+      },
+    ],
+  },
+] satisfies readonly NavigationGroup[];
+
+// مؤقتًا حتى نعدّل Sidebar الطالب في الخطوة التالية
+export const NAV_GROUPS = STUDENT_NAV_GROUPS;
 export const FEATURES = [
   {
     label: "دليل المسار",
@@ -34,4 +119,4 @@ export const FEATURES = [
     path: "/support",
     color: "bg-destructive/10 text-destructive",
   },
-];
+] as const;

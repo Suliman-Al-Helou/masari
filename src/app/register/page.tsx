@@ -9,10 +9,12 @@ export default function RegisterPage() {
   const router = useRouter();
   const token = params.get('invite');
 
-  useEffect(() => {
-    // وجّه للـ login مع الـ token
+useEffect(() => {
+  if(token){
     router.replace(`/login?invite=${token}`);
-  }, [token]);
-
+  }else{
+    router.replace('/login') // with out token 
+  }
+}, [token, router]);
   return null;
 }

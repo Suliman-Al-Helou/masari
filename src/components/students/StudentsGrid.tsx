@@ -1,7 +1,7 @@
 'use client';
 
 import { Users } from 'lucide-react';
-import { Student } from '@/lib/constants/students';
+import type { Student } from '@/types';
 import StudentCard from './StudentCard';
 
 interface StudentsGridProps {

@@ -1,38 +1,87 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-interface WelcomeCardProps {
-  user?: { full_name?: string };
+type Props = {
+  user: {
+    full_name: string;
+    major?:    string;
+    semester?: string;
+  };
+};
+
+function useLiveTime() {
+  const [now, setNow] = useState(new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
 }
 
-export default function WelcomeCard({ user }: WelcomeCardProps) {
-  const name = user?.full_name || 'الطالب';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'صباح الخير' : hour < 18 ? 'مساء الخير' : 'مساء النور';
+function getGreeting(hour: number) {
+  if (hour < 12) return 'صباح الخير';
+  if (hour < 17) return 'مساء الخير';
+  return 'مساء النور';
+}
+
+export default function WelcomeCard({ user }: Props) {
+  const now = useLiveTime();
+
+  const gregorian = now.toLocaleDateString('ar-SA', {
+    weekday: 'long',
+    year:    'numeric',
+    month:   'long',
+    day:     'numeric',
+  });
+
+  const hijri = now.toLocaleDateString('ar-SA-u-ca-islamic', {
+    year:  'numeric',
+    month: 'long',
+    day:   'numeric',
+  });
+
+  const time = now.toLocaleTimeString('ar-SA', {
+    hour:   '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  });
+
+  const greeting = getGreeting(now.getHours());
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-primary p-6 lg:p-8 text-white">
-      {/* Decorative circles */}
-      <div className="absolute -top-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-2xl" />
-      <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/5 rounded-full blur-xl" />
+    <div className="bg-primary rounded-2xl p-6 text-primary-foreground">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-white/80 text-sm">{greeting}</span>
-          <span className="text-lg">👋</span>
+        {/* اليسار — اسم وتخصص */}
+        <div>
+          <p className="text-sm opacity-75 mb-1">{greeting}،</p>
+          <h1 className="text-2xl font-semibold">{user.full_name}</h1>
+          <div className="flex items-center gap-2 mt-3 flex-wrap">
+            {user.major && (
+              <span className="text-sm bg-white/15 px-3 py-1 rounded-full">
+                {user.major}
+              </span>
+            )}
+            {user.semester && (
+              <span className="text-sm bg-white/15 px-3 py-1 rounded-full">
+                {user.semester}
+              </span>
+            )}
+          </div>
         </div>
-        <h2 className="text-2xl lg:text-3xl font-bold mb-2">{name}</h2>
 
-        <div className="flex items-center gap-2 bg-white/15 rounded-xl px-4 py-2.5 w-fit mt-4">
-          <Sparkles className="w-4 h-4" />
-          <p className="text-sm font-medium">دليلك الذكي في رحلتك الجامعية</p>
+        {/* اليمين — الوقت والتاريخ */}
+        <div className="text-left bg-white/10 rounded-xl px-4 py-3 min-w-fit">
+          <p className="text-xl font-semibold tracking-wide" dir="ltr">
+            {time}
+          </p>
+          <p className="text-xs opacity-80 mt-1">{gregorian}</p>
+          <p className="text-xs opacity-60 mt-0.5">{hijri}</p>
         </div>
 
-        <p className="text-white/70 text-xs mt-3 max-w-md leading-relaxed">
-          لا تضيع بين المواد والمواعيد. مساري يرسم لك طريقك الأكاديمي خطوة بخطوة.
-        </p>
       </div>
     </div>
   );
-}
+} 

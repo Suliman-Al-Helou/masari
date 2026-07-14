@@ -2,7 +2,7 @@
 
 // src/components/semester-plan/SummaryCards.tsx
 
-import { Task } from '@/lib/constants/semester-plan';
+import type { Task } from '@/types';
 
 interface SummaryCardsProps {
   tasks: Task[];
@@ -11,8 +11,8 @@ interface SummaryCardsProps {
 export default function SummaryCards({ tasks }: SummaryCardsProps) {
   const cards = [
     { label: 'الكل',         value: tasks.length,                                            color: 'bg-primary/10 text-primary' },
-    { label: 'قيد التنفيذ', value: tasks.filter(t => t.status === 'قيد التنفيذ').length,    color: 'bg-info/10 text-info' },
-    { label: 'مكتمل',       value: tasks.filter(t => t.status === 'مكتمل').length,           color: 'bg-success/10 text-success' },
+    { label: 'قيد التنفيذ', value: tasks.filter(t => t.status === 'in_progress').length,    color: 'bg-info/10 text-info' },
+    { label: 'مكتمل',       value: tasks.filter(t => t.status === 'done').length,           color: 'bg-success/10 text-success' },
   ];
 
   return (

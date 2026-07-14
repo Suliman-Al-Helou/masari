@@ -6,6 +6,7 @@ export function useFormField(initialValue = '') {
   const [touched, setTouched] = useState(false);
 
   const validate = (rules: Array<(v: string) => string | null>) => {
+      setTouched(true);
     for (const rule of rules) {
       const msg = rule(value);
       if (msg) { setError(msg); return false; }

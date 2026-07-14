@@ -2,7 +2,8 @@
 
 // src/components/semester-plan/TaskTabs.tsx
 
-import { TABS, TabValue } from '@/lib/constants/semester-plan';
+import { TABS } from '@/lib/constants/semester-plan';
+import type { TabValue } from '@/types';
 
 interface TaskTabsProps {
   value: TabValue;

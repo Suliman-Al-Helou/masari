@@ -4,8 +4,9 @@
 
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
-import { TaskForm, DEFAULT_FORM, TASK_TYPES, TASK_PRIORITIES } from '@/lib/constants/semester-plan';
-import { useToast } from '@/lib/context/ToastContext';
+import { DEFAULT_FORM, TASK_TYPES, TASK_PRIORITIES } from '@/lib/constants/semester-plan';
+import type { TaskForm } from '@/types';
+
 interface AddTaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

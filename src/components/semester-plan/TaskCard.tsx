@@ -1,7 +1,8 @@
 'use client';
 
 import { Clock, CheckCircle, Trash2 } from 'lucide-react';
-import { Task, TYPE_ICONS, STATUS_STYLES, PRIORITY_STYLES, nextStatus } from '@/lib/constants/semester-plan';
+import type { Task } from '@/types';
+import { TYPE_ICONS, STATUS_STYLES, PRIORITY_STYLES, nextStatus } from '@/lib/constants/semester-plan';
 
 interface TaskCardProps {
   task: Task;
@@ -11,7 +12,7 @@ interface TaskCardProps {
 
 export default function TaskCard({ task, onStatusChange, onDelete }: TaskCardProps) {
   const Icon = TYPE_ICONS[task.type] ?? TYPE_ICONS['أخرى'];
-  const isDone = task.status === 'مكتمل';
+  const isDone = task.status === 'done';
 
   return (
     <div className="rounded-2xl bg-card border border-border/50 p-4 hover:shadow-md transition-all duration-200">

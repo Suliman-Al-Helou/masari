@@ -1,7 +1,7 @@
 'use client';
 
 import { Calendar } from 'lucide-react';
-import { Task } from '@/lib/constants/semester-plan';
+import type { Task } from '@/types';
 import TaskCard from './TaskCard';
 
 interface TaskListProps {

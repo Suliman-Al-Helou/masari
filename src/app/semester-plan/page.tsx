@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { useState, useMemo, useEffect } from 'react';
-import { Task, TabValue } from '@/lib/constants/semester-plan';
-import { getTasks, addTask, updateTask } from '@/lib/api';
-import { useAuth } from '@/lib/context/AuthContext';
-import { useToast } from '@/lib/context/ToastContext';
-import SemesterPlanHeader from '@/components/semester-plan/SemesterPlanHeader';
-import SummaryCards from '@/components/semester-plan/SummaryCards';
-import TaskTabs from '@/components/semester-plan/TaskTabs';
-import TaskList from '@/components/semester-plan/TaskList';
-import AddTaskDialog from '@/components/semester-plan/AddTaskDialog';
-import { TaskForm } from '@/lib/constants/semester-plan';
+import { useState, useMemo, useEffect } from "react";
+import { TaskForm } from "@/types";
+import type { TabValue, Task } from "@/types";
+import { getTasks, addTask, updateTask } from "@/lib/api/api";
+import { useAuth } from "@/lib/context/AuthContext";
+import { useToast } from "@/lib/context/ToastContext";
+import SemesterPlanHeader from "@/components/semester-plan/SemesterPlanHeader";
+import SummaryCards from "@/components/semester-plan/SummaryCards";
+import TaskTabs from "@/components/semester-plan/TaskTabs";
+import TaskList from "@/components/semester-plan/TaskList";
+import AddTaskDialog from "@/components/semester-plan/AddTaskDialog";
 
 export default function SemesterPlanPage() {
   const { user } = useAuth();
-  const toast = useToast();
+  const { Success, Error } = useToast();
 
-  const [tab, setTab] = useState<TabValue>('all');
+  const [tab, setTab] = useState<TabValue>("all");
   const [tasks, setTasks] = useState<Task[]>([]);
   const [addOpen, setAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,13 +30,13 @@ export default function SemesterPlanPage() {
         const data = await getTasks(user.id);
         setTasks((data ?? []) as Task[]);
       } catch {
-        toast.error('خطأ', 'تعذّر تحميل المهام');
+        Error("خطأ", "تعذّر تحميل المهام");
       } finally {
         setLoading(false);
       }
     };
     fetch();
-  }, [user]);
+  }, [user, Error]);
 
   // ── إضافة مهمة ──
   const handleAdd = async (form: TaskForm) => {
@@ -46,50 +46,55 @@ export default function SemesterPlanPage() {
         user_id: user.id,
         title: form.title,
         type: form.type,
-        status: 'pending',
+        status: "pending",
         priority: form.priority,
         due_date: form.due_date || undefined,
         course_code: form.course_code || undefined,
       });
-      setTasks(prev => [newTask as Task, ...prev]);
-      toast.success('تمت الإضافة', `تم إضافة "${form.title}"`);
+      setTasks((prev) => [newTask as Task, ...prev]);
+      Success("تمت الإضافة", `تم إضافة "${form.title}"`);
     } catch {
-      toast.error('خطأ', 'تعذّرت إضافة المهمة');
+      Error("خطأ", "تعذّرت إضافة المهمة");
     }
   };
 
   // ── تغيير الحالة ──
-  const handleStatusChange = async (id: string, status: Task['status']) => {
-    setTasks(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+  const handleStatusChange = async (id: string, status: Task["status"]) => {
+    setTasks((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
     try {
       await updateTask(id, { status });
     } catch {
-      setTasks(prev => prev.map(t => t.id === id ? { ...t, status: t.status } : t));
-      toast.error('خطأ', 'تعذّر تحديث الحالة');
+      setTasks((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, status: t.status } : t)),
+      );
+      Error("خطأ", "تعذّر تحديث الحالة");
     }
   };
 
   // ── حذف مهمة ──
   const handleDelete = async (id: string) => {
-    const deleted = tasks.find(t => t.id === id);
+    const deleted = tasks.find((t) => t.id === id);
     // optimistic: نحذف فوراً من الـ UI
-    setTasks(prev => prev.filter(t => t.id !== id));
+    setTasks((prev) => prev.filter((t) => t.id !== id));
     try {
-      const { deleteTask } = await import('@/lib/api');
+      const { deleteTask } = await import("@/lib/api/api");
       await deleteTask(id);
-      toast.success('تم الحذف', `تم حذف "${deleted?.title ?? 'المهمة'}"`);
+      Success("تم الحذف", `تم حذف "${deleted?.title ?? "المهمة"}"`);
     } catch {
       // rollback
-      if (deleted) setTasks(prev => [...prev, deleted].sort((a, b) =>
-        (a.due_date ?? '').localeCompare(b.due_date ?? '')
-      ));
-      toast.error('خطأ', 'تعذّر حذف المهمة');
+      if (deleted)
+        setTasks((prev) =>
+          [...prev, deleted].sort((a, b) =>
+            (a.due_date ?? "").localeCompare(b.due_date ?? ""),
+          ),
+        );
+      Error("خطأ", "تعذّر حذف المهمة");
     }
   };
 
-  const filteredTasks = useMemo(() =>
-    tab === 'all' ? tasks : tasks.filter(t => t.status === tab),
-    [tasks, tab]
+  const filteredTasks = useMemo(
+    () => (tab === "all" ? tasks : tasks.filter((t) => t.status === tab)),
+    [tasks, tab],
   );
 
   return (

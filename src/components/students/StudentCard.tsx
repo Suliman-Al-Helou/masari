@@ -1,7 +1,8 @@
 'use client';
 
 import { MessageCircle, GraduationCap, Building2 } from 'lucide-react';
-import { Student, getInitials } from '@/lib/constants/students';
+import {getInitials } from '@/lib/utils';
+import { Student } from '@/types';
 
 interface StudentCardProps {
   student: Student;

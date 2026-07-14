@@ -3,8 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { updateProfile } from "@/lib/api";
+import { updateProfile } from "@/lib/api/api";
+
 import { useToast } from "@/lib/context/ToastContext";
+import {
+  UNIVERSITIES,
+  getMajorsForUniversity,
+  getYearsForMajor,
+  SEMESTERS,
+  getDepartmentsForUniversity,
+} from "@/lib/constants/academic";
 import {
   GraduationCap,
   BookOpen,
@@ -13,107 +21,17 @@ import {
   Hash,
 } from "lucide-react";
 
+// باقي الكود كما هو بدون أي تغيير
 const STEPS = [
   { id: 1, title: "جامعتك", icon: "🏛️" },
   { id: 2, title: "تخصصك", icon: "📚" },
   { id: 3, title: "مسارك", icon: "🎯" },
 ];
 
-const UNIVERSITIES = [
-  "الجامعة الإسلامية بغزة",
-  "جامعة الأزهر - غزة",
-  "جامعة الأقصى",
-  "جامعة فلسطين",
-  "جامعة الإسراء",
-  "الجامعة الدولية",
-  "الكلية الجامعية للعلوم التطبيقية",
-  "جامعة القدس المفتوحة",
-  "أخرى",
-];
-
-const MAJORS = [
-  "علم الحاسب",
-  "هندسة البرمجيات",
-  "هندسة الحاسوب",
-  "نظم المعلومات",
-  "الذكاء الاصطناعي",
-  "إدارة الأعمال",
-  "المحاسبة",
-  "التسويق",
-  "الاقتصاد",
-  "الطب",
-  "الصيدلة",
-  "التمريض",
-  "الهندسة المدنية",
-  "الهندسة الكهربائية",
-  "الهندسة الميكانيكية",
-  "علم النفس",
-  "الحقوق",
-  "الإعلام",
-  "أخرى",
-];
-
-const MAJOR_YEARS: Record<string, string[]> = {
-  الطب: [
-    "السنة الأولى",
-    "السنة الثانية",
-    "السنة الثالثة",
-    "السنة الرابعة",
-    "السنة الخامسة",
-    "السنة السادسة",
-    "السنة السابعة",
-  ],
-  الصيدلة: [
-    "السنة الأولى",
-    "السنة الثانية",
-    "السنة الثالثة",
-    "السنة الرابعة",
-    "السنة الخامسة",
-  ],
-  "الهندسة المدنية": [
-    "السنة الأولى",
-    "السنة الثانية",
-    "السنة الثالثة",
-    "السنة الرابعة",
-    "السنة الخامسة",
-  ],
-  "الهندسة الكهربائية": [
-    "السنة الأولى",
-    "السنة الثانية",
-    "السنة الثالثة",
-    "السنة الرابعة",
-    "السنة الخامسة",
-  ],
-  "الهندسة الميكانيكية": [
-    "السنة الأولى",
-    "السنة الثانية",
-    "السنة الثالثة",
-    "السنة الرابعة",
-    "السنة الخامسة",
-  ],
-  التمريض: [
-    "السنة الأولى",
-    "السنة الثانية",
-    "السنة الثالثة",
-    "السنة الرابعة",
-    "السنة الخامسة",
-  ],
-};
-
-const DEFAULT_YEARS = [
-  "السنة الأولى",
-  "السنة الثانية",
-  "السنة الثالثة",
-  "السنة الرابعة",
-];
-const SEMESTERS = ["الفصل الأول", "الفصل الثاني", "الفصل الصيفي"];
-
-const getYearsForMajor = (major: string) => MAJOR_YEARS[major] ?? DEFAULT_YEARS;
-
 export default function OnboardingPage() {
   const router = useRouter();
   const { user } = useAuth();
-  const toast = useToast();
+  const {Success , Error} = useToast();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -147,9 +65,9 @@ export default function OnboardingPage() {
     setLoading(false);
 
     if (error) {
-      toast.error("حدث خطأ", "حاول مرة أخرى");
+      Error("حدث خطأ", "حاول مرة أخرى");
     } else {
-      toast.success("تم! 🎉", "مرحباً بك في مساري");
+      Success("تم! 🎉", "مرحباً بك في مساري");
       router.push("/");
     }
   };
@@ -194,7 +112,7 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        {/* ===== Step 1 — الجامعة ===== */}
+        {/* Step 1 */}
         {step === 1 && (
           <div className="ob-body">
             <h2 className="ob-step-title">
@@ -205,7 +123,14 @@ export default function OnboardingPage() {
               {UNIVERSITIES.map((u) => (
                 <button
                   key={u}
-                  onClick={() => setForm({ ...form, university: u })}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      university: u,
+                      major: "",
+                      majorCustom: "",
+                    })
+                  }
                   className={`ob-option ${form.university === u ? "ob-option-selected" : ""}`}
                 >
                   {u}
@@ -227,40 +152,55 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ===== Step 2 — التخصص ===== */}
+        {/* Step 2 */}
         {step === 2 && (
           <div className="ob-body">
             <h2 className="ob-step-title">
               <BookOpen className="ob-step-icon" />
               شو تخصصك؟
             </h2>
-            <div className="ob-grid">
-              {MAJORS.map((m) => (
-                <button
-                  key={m}
-                  onClick={() => setForm({ ...form, major: m })}
-                  className={`ob-option ${form.major === m ? "ob-option-selected" : ""}`}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-            {form.major === "أخرى" && (
-              <input
-                type="text"
-                placeholder="اكتب تخصصك"
-                value={form.majorCustom}
-                onChange={(e) =>
-                  setForm({ ...form, majorCustom: e.target.value })
-                }
-                className="ob-input"
-                autoFocus
-              />
-            )}
+
+            {(() => {
+              const departments = getDepartmentsForUniversity(form.university);
+
+              if (departments) {
+                // عرض مع أقسام
+                return Object.entries(departments).map(([dept, majors]) => (
+                  <div key={dept} className="ob-dept-group">
+                    <p className="ob-dept-label">{dept}</p>
+                    <div className="ob-grid">
+                      {majors.map((m) => (
+                        <button
+                          key={m}
+                          onClick={() => setForm({ ...form, major: m })}
+                          className={`ob-option ${form.major === m ? "ob-option-selected" : ""}`}
+                        >
+                          {m}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ));
+              }
+
+              // عرض عادي بدون أقسام
+              return (
+                <div className="ob-grid">
+                  {getMajorsForUniversity(form.university).map((m) => (
+                    <button
+                      key={m}
+                      onClick={() => setForm({ ...form, major: m })}
+                      className={`ob-option ${form.major === m ? "ob-option-selected" : ""}`}
+                    >
+                      {m}
+                    </button>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
-
-        {/* ===== Step 3 — المسار ===== */}
+        {/* Step 3 */}
         {step === 3 && (
           <div className="ob-body">
             <h2 className="ob-step-title">
@@ -268,7 +208,6 @@ export default function OnboardingPage() {
               وين أنت في مسيرتك؟
             </h2>
 
-            {/* السنة الدراسية */}
             <div>
               <p className="ob-sub-label">السنة الدراسية</p>
               <div className="ob-grid">
@@ -296,12 +235,11 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* الفصل — يختفي إذا خريج */}
             {form.year && form.year !== "خريج" && (
               <div>
                 <p className="ob-sub-label">الفصل الدراسي</p>
                 <div className="ob-grid">
-                  {SEMESTERS.map((s) => (
+                  {SEMESTERS.map((s: string) => (
                     <button
                       key={s}
                       onClick={() => setForm({ ...form, semester: s })}
@@ -314,7 +252,6 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* نوع الدرجة */}
             <div className="ob-credits">
               <label className="ob-credits-label">
                 <GraduationCap size={16} />
@@ -333,7 +270,6 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* الساعات */}
             <div className="ob-credits">
               <label className="ob-credits-label" htmlFor="credits-input">
                 <Hash size={16} />
@@ -356,7 +292,6 @@ export default function OnboardingPage() {
             </div>
           </div>
         )}
-        {/* ===== نهاية Step 3 ===== */}
 
         {/* Actions */}
         <div className="ob-actions">
@@ -578,21 +513,6 @@ export default function OnboardingPage() {
           flex-wrap: wrap;
           gap: 0.5rem;
         }
-        .ob-credit-btn {
-          padding: 0.5rem 1.25rem;
-          border: 1.5px solid hsl(var(--border));
-          border-radius: 100px;
-          font-size: 0.875rem;
-          font-family: var(--font-main);
-          background: hsl(var(--background));
-          color: hsl(var(--foreground));
-          cursor: pointer;
-          transition: all 0.15s;
-          font-weight: 600;
-        }
-        .ob-credit-btn:hover {
-          border-color: hsl(var(--primary));
-        }
         .ob-credits-hint {
           font-size: 0.78rem;
           color: hsl(var(--muted-foreground));
@@ -648,6 +568,17 @@ export default function OnboardingPage() {
           .ob-actions {
             padding: 1rem 1.5rem 1.5rem;
           }
+        }
+        .ob-dept-group {
+          margin-bottom: 1.5rem;
+        }
+        .ob-dept-label {
+          font-weight: 600;
+          color: hsl(var(--primary));
+          margin-bottom: 0.5rem;
+          font-size: 0.9rem;
+          border-right: 3px solid hsl(var(--primary));
+          padding-right: 0.5rem;
         }
       `}</style>
     </div>

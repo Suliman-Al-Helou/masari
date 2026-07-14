@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { getDashboardStats } from '@/lib/api';
+import { getDashboardStats } from '@/lib/api/api';
 
 export type DashboardData = Awaited<ReturnType<typeof getDashboardStats>>;
 

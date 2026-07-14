@@ -1,0 +1,8 @@
+const SECOND = 1_000;
+const MINUTE = 60 * SECOND;
+
+export const QUERY_STALE_TIME = {
+  ADMIN_STATS: 2 * MINUTE,
+  ADMIN_ACTIVITY: 30 * SECOND,
+  ADMIN_DISTRIBUTION: 5 * MINUTE,
+} as const;
