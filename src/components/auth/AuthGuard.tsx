@@ -1,26 +1,15 @@
 "use client";
 
-import {
-  useEffect,
-  useRef,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 import { useAuth } from "@/lib/hooks/useAuth";
 
 const PUBLIC_ROUTE = "/";
 
-const AUTH_ROUTES = [
-  "/login",
-  "/register",
-  "/verify-email",
-] as const;
+const AUTH_ROUTES = ["/login", "/register", "/verify-email"] as const;
 
-const SERVER_GUARDED_ROUTES = [
-  "/admin",
-  "/onboarding",
-] as const;
+const SERVER_GUARDED_ROUTES = ["/admin", "/onboarding"] as const;
 
 type GuardDecision =
   | { status: "allow" }
@@ -31,14 +20,8 @@ type GuardDecision =
       destination: string;
     };
 
-function matchesRoute(
-  pathname: string,
-  route: string,
-): boolean {
-  return (
-    pathname === route ||
-    pathname.startsWith(`${route}/`)
-  );
+function matchesRoute(pathname: string, route: string): boolean {
+  return pathname === route || pathname.startsWith(`${route}/`);
 }
 
 function LoadingScreen() {
@@ -55,18 +38,8 @@ function LoadingScreen() {
   );
 }
 
-export default function AuthGuard({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  const {
-    user,
-    profile,
-    isDisabled,
-    loading,
-    logout,
-  } = useAuth();
+export default function AuthGuard({ children }: { children: ReactNode }) {
+  const { user, profile, isDisabled, loading, logout } = useAuth();
 
   const pathname = usePathname();
   const disabledRedirectStarted = useRef(false);
@@ -75,10 +48,9 @@ export default function AuthGuard({
     matchesRoute(pathname, route),
   );
 
-  const isServerGuardedRoute =
-    SERVER_GUARDED_ROUTES.some((route) =>
-      matchesRoute(pathname, route),
-    );
+  const isServerGuardedRoute = SERVER_GUARDED_ROUTES.some((route) =>
+    matchesRoute(pathname, route),
+  );
 
   let decision: GuardDecision;
 
@@ -100,9 +72,7 @@ export default function AuthGuard({
         ? { status: "allow" }
         : {
             status: "redirect",
-            destination: `/login?callbackUrl=${encodeURIComponent(
-              pathname,
-            )}`,
+            destination: `/login?callbackUrl=${encodeURIComponent(pathname)}`,
           };
   } else if (!profile) {
     // A user without a loaded profile cannot be routed safely.
@@ -122,28 +92,7 @@ export default function AuthGuard({
   }
 
   const redirectDestination =
-    decision.status === "redirect"
-      ? decision.destination
-      : null;
-useEffect(() => {
-  // Temporary guard decision diagnostics.
-  console.log("[AuthGuard decision]", {
-    pathname,
-    status: decision.status,
-    redirectDestination,
-    loading,
-    hasUser: Boolean(user),
-    hasProfile: Boolean(profile),
-    role: profile?.role ?? null,
-  });
-}, [
-  pathname,
-  decision.status,
-  redirectDestination,
-  loading,
-  user,
-  profile,
-]);
+    decision.status === "redirect" ? decision.destination : null;
   useEffect(() => {
     if (decision.status === "disabled") {
       if (disabledRedirectStarted.current) return;
@@ -151,27 +100,17 @@ useEffect(() => {
       disabledRedirectStarted.current = true;
 
       void logout().finally(() => {
-        window.location.replace(
-          "/login?reason=account-disabled",
-        );
+        window.location.replace("/login?reason=account-disabled");
       });
 
       return;
     }
 
     if (redirectDestination) {
-      console.log("[AuthGuard redirect]", {
-  from: pathname,
-  to: redirectDestination,
-});
       // Reload across auth boundaries so the server reads fresh cookies.
       window.location.replace(redirectDestination);
     }
-  }, [
-    decision.status,
-    redirectDestination,
-    logout,
-  ]);
+  }, [decision.status, redirectDestination, logout]);
 
   if (decision.status === "allow") {
     return <>{children}</>;

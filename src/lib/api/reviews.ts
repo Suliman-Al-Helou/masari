@@ -90,41 +90,26 @@ export async function getDoctors(
   return (data ?? []) as Doctor[];
 }
 
-export async function getDoctorsByCourseMajor(
+export async function getDoctorsByCourse(
+  courseCode: string,
   university: string,
-  major: string,
 ): Promise<Doctor[]> {
   const { data, error } = await supabase
     .from("doctors")
     .select("*")
+    .eq("course_code", courseCode)
     .eq("university", university)
-    .eq("major", major)
     .order("name", { ascending: true });
 
-  if (error) throw error;
+  if (error) {
+    throw new Error(error.message);
+  }
+
   return (data ?? []) as Doctor[];
 }
 
-export async function createDoctor(doctor: {
-  name: string;
-  university: string;
-  major: string;
-  course_code?: string | null;
-  course_name?: string | null;
-}): Promise<Doctor> {
-  const { data, error } = await supabase
-    .from("doctors")
-    .insert(doctor)
-    .select()
-    .single();
-  if (error) throw error;
-  return data as Doctor;
-}
 
-export async function deleteDoctor(id: string): Promise<void> {
-  const { error } = await supabase.from("doctors").delete().eq("id", id);
-  if (error) throw error;
-}
+
 
 // ══════════════════════════════════════════════
 // Course Reviews

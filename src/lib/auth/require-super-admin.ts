@@ -4,7 +4,6 @@ import type { Permission } from "@/lib/auth/permissions";
 
 export async function requirePermission(permission: Permission) {
   const session = await getCurrentUser();
-
   if (!session) {
     return {
       ok: false as const,
@@ -14,12 +13,11 @@ export async function requirePermission(permission: Permission) {
       ),
     };
   }
-
-  if (!can(session.role, permission)) {
+  if (!session || !can(session.role, permission) || !session.isSuperAdmin) {
     return {
       ok: false as const,
       response: Response.json(
-        { success: false, error: "ليس لديك صلاحية" },
+        { success: false, error: "هذه العملية متاحة للأدمن الأساسي فقط" },
         { status: 403 },
       ),
     };

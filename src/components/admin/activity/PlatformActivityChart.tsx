@@ -55,7 +55,7 @@ export default function PlatformActivityChart({
 
   const width = 760;
   const height = 280;
-  const paddingX = 36;
+  const paddingX =36;
   const paddingTop = 20;
   const paddingBottom = 38;
   const chartHeight = height - paddingTop - paddingBottom;
@@ -163,7 +163,7 @@ export default function PlatformActivityChart({
                 x={paddingX - 37}
                 y={y + 4}
                 textAnchor="end"
-                className="fill-muted-foreground text-[25px]"
+                className="fill-muted-foreground text-[25px] "
               >
                 {Math.round(maxValue * (1 - ratio))}
               </text>

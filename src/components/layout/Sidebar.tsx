@@ -1984,12 +1984,18 @@ export default function Sidebar({
                       {active && (
                         <motion.span
                           aria-hidden="true"
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: shouldReduceMotion ? 8 : 3.2,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
+                          animate={
+                            shouldReduceMotion ? undefined : { rotate: 360 }
+                          }
+                          transition={
+                            shouldReduceMotion
+                              ? undefined
+                              : {
+                                  duration: 28,
+                                  repeat: Infinity,
+                                  ease: "linear",
+                                }
+                          }
                           className="absolute -inset-1.5 rounded-full border-2 border-transparent border-r-sidebar-orbit-gold/35 border-t-[#fff1bd]"
                         />
                       )}
@@ -2004,6 +2010,18 @@ export default function Sidebar({
                   </motion.div>
                 );
               })}
+              <motion.button
+                type="button"
+                onClick={onLogout}
+                initial={{ opacity: 0, scale: 0 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0 }}
+                whileTap={{ scale: 0.92 }}
+                aria-label="تسجيل الخروج"
+                className="absolute bottom-[350px] right-0 flex h-11 w-11 items-center justify-center rounded-full border border-destructive/50 bg-destructive text-destructive-foreground shadow-lg"
+              >
+                <LogOut aria-hidden="true" className="h-5 w-5" />
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -2053,124 +2071,45 @@ export default function Sidebar({
           className="pointer-events-none absolute inset-0 overflow-hidden rounded-l-[1.75rem] border-l border-sidebar-orbit-line/30 bg-gradient-to-b from-sidebar-orbit-deep via-sidebar-orbit-base to-[#0d0715] shadow-[-12px_0_35px_rgba(61,28,92,0.24)]"
         />
 
-        {/* موجة SVG معكوسة لتناسب وجود القائمة في يمين واجهة RTL */}
-        <motion.svg
+        {/* خلفية مستقيمة بدون تموّج */}
+        <motion.div
           aria-hidden="true"
-          viewBox="0 0 320 1000"
-          preserveAspectRatio="none"
           initial={false}
           animate={{ opacity: isOpen ? 1 : 0 }}
-          transition={{ duration: shouldReduceMotion ? 0.3 : 0.4 }}
-          className="pointer-events-none absolute inset-y-0 -left-12 right-0 h-full w-[calc(100%+3rem)] overflow-visible drop-shadow-[-18px_0_35px_rgba(54,27,82,0.22)]"
-        >
-          <defs>
-            <linearGradient
-              id={`sidebar-wave-${variant}`}
-              x1="0"
-              y1="0"
-              x2="1"
-              y2="1"
-            >
-              <stop offset="0%" stopColor="#241235" />
-              <stop offset="48%" stopColor="#160a24" />
-              <stop offset="100%" stopColor="#0d0715" />
-            </linearGradient>
-
-            <filter
-              id={`sidebar-wave-glow-${variant}`}
-              x="-80%"
-              y="-10%"
-              width="220%"
-              height="120%"
-            >
-              <feGaussianBlur stdDeviation="6" />
-            </filter>
-          </defs>
-
-          <path
-            d="M 54 0 C 8 128 78 245 35 382 C 6 482 76 592 40 720 C 14 820 72 910 48 1000 L 320 1000 L 320 0 Z"
-            fill={`url(#sidebar-wave-${variant})`}
-          />
-
-          <motion.path
-            d="M 54 0 C 8 128 78 245 35 382 C 6 482 76 592 40 720 C 14 820 72 910 48 1000"
-            fill="none"
-            stroke="#9f74dd"
-            strokeWidth="9"
-            filter={`url(#sidebar-wave-glow-${variant})`}
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={
-              isOpen
-                ? {
-                    pathLength: 1,
-                    opacity: shouldReduceMotion
-                      ? [0.26, 0.38, 0.26]
-                      : [0.24, 0.52, 0.24],
-                  }
-                : { pathLength: 0, opacity: 0 }
-            }
-            transition={{
-              pathLength: {
-                duration: shouldReduceMotion ? 0.55 : 0.95,
-                ease: [0.22, 1, 0.36, 1],
-              },
-              opacity: {
-                duration: shouldReduceMotion ? 6 : 4,
-                ease: "easeInOut",
-                repeat: Infinity,
-              },
-            }}
-          />
-
-          <motion.path
-            d="M 54 0 C 8 128 78 245 35 382 C 6 482 76 592 40 720 C 14 820 72 910 48 1000"
-            fill="none"
-            stroke="#8658c2"
-            strokeWidth="2"
-            initial={{ pathLength: 0, opacity: 0 }}
-            animate={{
-              pathLength: isOpen ? 1 : 0,
-              opacity: isOpen ? 0.86 : 0,
-            }}
-            transition={{
-              pathLength: {
-                duration: shouldReduceMotion ? 0.45 : 0.82,
-                ease: [0.22, 1, 0.36, 1],
-              },
-              opacity: {
-                duration: shouldReduceMotion ? 0.22 : 0.28,
-              },
-            }}
-          />
-        </motion.svg>
-
+          transition={{
+            duration: shouldReduceMotion ? 0 : 0.3,
+          }}
+          className="
+    pointer-events-none
+    absolute
+    inset-0
+    rounded-l-[2rem]
+    border-y
+    border-l
+    border-[#8658c2]/35
+    bg-[linear-gradient(180deg,#241235_0%,#160a24_48%,#0d0715_100%)]
+    shadow-[-18px_0_35px_rgba(54,27,82,0.22)]
+  "
+        />
         {/* نجوم ومدارات زخرفية لا تشارك في التفاعل */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 overflow-hidden"
         >
           <motion.div
-           animate={shouldReduceMotion ? undefined : { rotate: 360 }}
-transition={
-  shouldReduceMotion
-    ? undefined
-    : {
-        duration: 34,
-        repeat: Infinity,
-        ease: "linear",
-      }
-}
+            animate={shouldReduceMotion ? undefined : { rotate: 360 }}
+            transition={
+              shouldReduceMotion
+                ? undefined
+                : {
+                    duration: 34,
+                    repeat: Infinity,
+                    ease: "linear",
+                  }
+            }
             className="absolute -right-24 top-[22%] h-72 w-72 rounded-full border border-sidebar-orbit-line/10"
           />
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{
-              duration: shouldReduceMotion ? 62 : 28,
-              ease: "linear",
-              repeat: Infinity,
-            }}
-            className="absolute -left-20 top-[48%] h-52 w-52 rounded-full border border-dashed border-sidebar-orbit-line/10"
-          />
+
           <div className="absolute right-5 top-0 h-40 w-40 rounded-full bg-sidebar-orbit-line/5 blur-3xl" />
           {enableDecorations && (
             <>
@@ -2313,7 +2252,7 @@ transition={
                           )}
                         </div>
                       </div>
-                    )}{" "}
+                    )}
                   </span>
                 </motion.div>
               )}
@@ -2474,11 +2413,17 @@ transition={
                                         ? { rotate: 360, opacity: 0.8 }
                                         : { rotate: 360, opacity: 1 }
                                     }
-                                    transition={{
-                                      duration: shouldReduceMotion ? 8 : 3.4,
-                                      ease: "linear",
-                                      repeat: Infinity,
-                                    }}
+                                    transition={
+                                      shouldReduceMotion
+                                        ? undefined
+                                        : {
+                                            duration: shouldReduceMotion
+                                              ? 8
+                                              : 3.4,
+                                            repeat: Infinity,
+                                            ease: "linear",
+                                          }
+                                    }
                                     className="absolute -inset-1 rounded-full border-2 border-transparent border-r-sidebar-orbit-gold/35 border-t-[#fff0b7]"
                                   />
 
@@ -2486,22 +2431,18 @@ transition={
                                     aria-hidden="true"
                                     animate={
                                       shouldReduceMotion
-                                        ? {
-                                            rotate: -360,
-                                            opacity: [0.24, 0.36, 0.24],
-                                            scale: [1, 1.035, 1],
-                                          }
+                                        ? undefined
+                                        : { rotate: 360 }
+                                    }
+                                    transition={
+                                      shouldReduceMotion
+                                        ? undefined
                                         : {
-                                            rotate: -360,
-                                            opacity: [0.22, 0.52, 0.22],
-                                            scale: [1, 1.1, 1],
+                                            duration: 28,
+                                            repeat: Infinity,
+                                            ease: "linear",
                                           }
                                     }
-                                    transition={{
-                                      duration: shouldReduceMotion ? 10 : 5.2,
-                                      ease: "linear",
-                                      repeat: Infinity,
-                                    }}
                                     className="absolute -inset-2 rounded-full border border-dashed border-sidebar-orbit-gold/55"
                                   />
                                 </>

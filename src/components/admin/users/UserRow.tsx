@@ -2,10 +2,10 @@
 
 import { formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
-import { Trash2,Loader2 } from "lucide-react";
+import { Trash2, Loader2 } from "lucide-react";
 import { motion } from "motion/react";
 
-import { ROLE_STYLES } from "@/constants/admin-constants";
+import { ROLE_STYLES } from "@/lib/constants/admin-constants";
 import { buttonVariants } from "@/lib/motion";
 import type { AdminProfile } from "@/types/admin";
 import {
@@ -22,6 +22,8 @@ interface UserRowProps {
   onRoleChange: (role: UserRole) => void;
   onDelete: () => void;
   roleLoading: boolean;
+  canChangeRole: boolean;
+  canDelete: boolean;
 }
 
 export default function UserRow({
@@ -30,6 +32,8 @@ export default function UserRow({
   onRoleChange,
   onDelete,
   roleLoading,
+  canChangeRole,
+  canDelete,
 }: UserRowProps) {
   // Fallback name if the user has no full name.
   const displayName = user.full_name || "مستخدم بدون اسم";
@@ -80,23 +84,39 @@ export default function UserRow({
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <motion.button
-              type="button"
-              variants={buttonVariants}
-              initial="initial"
-              whileHover={roleLoading ? undefined : "hover"}
-              whileTap={roleLoading ? undefined : "tap"}
-              onClick={() => onRoleChange(nextRole)}
-              disabled={roleLoading}
-              aria-label={`تغيير دور المستخدم إلى ${
-                nextRole === "admin" ? "مشرف" : "طالب"
-              }`}
-              className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-50 ${
-                ROLE_STYLES[currentRole]
-              }`}
-            >
-              {roleLoading ? <Loader2/>: currentRole === "admin" ? "مشرف" : "طالب"}
-            </motion.button>
+            {canChangeRole ? (
+              <motion.button
+                type="button"
+                variants={buttonVariants}
+                initial="initial"
+                whileHover={roleLoading ? undefined : "hover"}
+                whileTap={roleLoading ? undefined : "tap"}
+                onClick={() => onRoleChange(nextRole)}
+                disabled={roleLoading}
+                aria-label={`تغيير دور المستخدم إلى ${
+                  nextRole === "admin" ? "مشرف" : "طالب"
+                }`}
+                className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium transition-opacity disabled:cursor-not-allowed disabled:opacity-50 ${
+                  ROLE_STYLES[currentRole]
+                }`}
+              >
+                {roleLoading ? (
+                  <Loader2 />
+                ) : currentRole === "admin" ? (
+                  "مشرف"
+                ) : (
+                  "طالب"
+                )}
+              </motion.button>
+            ) : (
+              <span
+                className={`flex-shrink-0 rounded-full px-3 py-1 text-xs font-medium ${
+                  ROLE_STYLES[currentRole]
+                }`}
+              >
+                {currentRole === "admin" ? "مشرف" : "طالب"}
+              </span>
+            )}
           </TooltipTrigger>
 
           <TooltipContent className="bg-primary text-primary-foreground border-primary">
@@ -104,20 +124,21 @@ export default function UserRow({
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-
-      <motion.button
-        type="button"
-        variants={buttonVariants}
-        initial="initial"
-        whileHover="hover"
-        whileTap="tap"
-        onClick={onDelete}
-        className="flex-shrink-0 p-1 text-muted-foreground transition-colors hover:text-destructive"
-        title="حذف المستخدم"
-        aria-label={`حذف المستخدم ${displayName}`}
-      >
-        <Trash2 className="h-4 w-4" aria-hidden="true" />
-      </motion.button>
+      {canDelete && (
+        <motion.button
+          type="button"
+          variants={buttonVariants}
+          initial="initial"
+          whileHover="hover"
+          whileTap="tap"
+          onClick={onDelete}
+          className="flex-shrink-0 p-1 text-muted-foreground transition-colors hover:text-destructive"
+          title="حذف المستخدم"
+          aria-label={`حذف المستخدم ${displayName}`}
+        >
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
+        </motion.button>
+      )}
     </div>
   );
 }

@@ -105,7 +105,7 @@ const INITIAL_STATE: ReviewState = {
 
 export default function ReviewDrawer({ doctor, courseCode, open, onClose }: ReviewDrawerProps) {
   const { user }   = useAuth();
-  const toast      = useToast();
+  const {Success,Error}      = useToast();
   const qc         = useQueryClient();
 
   const [step,      setStep]      = useState(1);
@@ -140,9 +140,9 @@ export default function ReviewDrawer({ doctor, courseCode, open, onClose }: Revi
       qc.invalidateQueries({ queryKey: ['doctor-reviews', doctor.id] });
       qc.invalidateQueries({ queryKey: ['doctors'] });
       setSubmitted(true);
-      toast.success('تم التقييم!', `شكراً — تقييمك ${state.pct}% سيساعد الطلاب الآخرين`);
+      Success('تم التقييم!', `شكراً — تقييمك ${state.pct}% سيساعد الطلاب الآخرين`);
     },
-    onError: () => toast.error('خطأ', 'فشل في إرسال التقييم'),
+    onError: () => Error('خطأ', 'فشل في إرسال التقييم'),
   });
 
   const setField = <K extends keyof ReviewState>(k: K, v: ReviewState[K]) =>

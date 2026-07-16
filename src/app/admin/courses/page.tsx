@@ -23,7 +23,7 @@ import {
   getMajorsForUniversity,
   MAJORS,
 } from "@/lib/constants/academic";
-import CustomSelect from "@/components/admin/CustomSelect";
+import CustomSelect from "@/components/ui/CustomSelect";
 
 
 const CATEGORIES = ["متطلب جامعة", "متطلب كلية", "متطلب تخصص", "اختياري"];

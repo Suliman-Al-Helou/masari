@@ -1,12 +1,13 @@
-import { NextRequest } from "next/server";
-
+import {
+  disableManagedUser,
+  UserManagementError,
+} from "@/lib/api/user-management.service";
 import { PERMISSION } from "@/lib/auth/permissions";
-import { requirePermission } from "@/lib/auth/require-permission";
-import { dbAdmin } from "@/lib/db/server-only";
+import { requirePermission } from "@/lib/auth/require-super-admin";
 import { logger } from "@/lib/logger";
 
 export async function DELETE(
-  _request: NextRequest,
+  _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const auth = await requirePermission(PERMISSION.USERS_MANAGE);
@@ -17,57 +18,28 @@ export async function DELETE(
 
   const { id: targetUserId } = await params;
 
-  if (auth.session.userId === targetUserId) {
-    return Response.json(
-      { error: "لا يمكنك تعطيل حسابك الخاص" },
-      { status: 400 },
-    );
-  }
-
   try {
-    const disabledAt = new Date().toISOString();
-
-    // Block the user from signing in through Supabase Auth
-    const { error: authError } =
-      await dbAdmin.auth.admin.updateUserById(targetUserId, {
-        ban_duration: "876000h",
-      });
-
-    if (authError) {
-      throw authError;
-    }
-
-    // Mark the profile as disabled inside the application
-    const { data, error: profileError } = await dbAdmin
-      .from("profiles")
-      .update({
-        deleted_at: disabledAt,
-      })
-      .eq("id", targetUserId)
-      .select("id")
-      .maybeSingle();
-
-    if (profileError || !data) {
-      // Undo the Auth ban if updating the profile fails
-      await dbAdmin.auth.admin.updateUserById(targetUserId, {
-        ban_duration: "none",
-      });
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      return Response.json(
-        { error: "المستخدم غير موجود" },
-        { status: 404 },
-      );
-    }
+    // Soft-disables the user and blocks Auth access.
+    await disableManagedUser(
+      auth.session.userId,
+      targetUserId,
+    );
 
     return Response.json({
       success: true,
       message: "تم تعطيل حساب المستخدم",
     });
   } catch (error) {
+    if (error instanceof UserManagementError) {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: error.status },
+      );
+    }
+
     logger.error(error, "Error disabling user");
 
     return Response.json(

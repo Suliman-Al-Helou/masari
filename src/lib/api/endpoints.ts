@@ -6,7 +6,9 @@ export const API_ENDPOINTS = {
     users: "/api/admin/users", // GET: جلب كل المستخدمين
     user: (userId: string) => `/api/admin/users/${userId}`, // DELETE: حذف مستخدم محدد
     userRole: (userId: string) => `/api/admin/users/${userId}/role`, // PATCH: تغيير دور مستخدم
-
+    restoreUser: (userId: string) => `/api/admin/users/${userId}/restore`, // ارجاع المستخدم المحذوف
+    userDeletionNote: (userId: string) =>
+      `/api/admin/users/${userId}/deletion-note`, //كتابة سبب تعطيل حساب المستخدم
     // إحصائيات لوحة التحكم
     stats: "/api/admin/stats", // GET: أرقام Dashboard (عدد المستخدمين، المواد، إلخ)
     majorDistribution: "/api/admin/major-distribution", // GET: توزيع الطلاب حسب التخصص
@@ -17,7 +19,9 @@ export const API_ENDPOINTS = {
     // إدارة المواد
     courses: "/api/admin/courses", // GET: جلب المواد (بفلاتر اختيارية) / POST: إنشاء مادة
     adminCourse: (id: string) => `/api/admin/courses/${id}`, // DELETE: حذف مادة محددة
-
+    // إدارة الدكاترة
+    doctors: "/api/admin/doctors",
+    adminDoctor: (id: string) => `/api/admin/doctors/${id}`,
     // مراجعات المواد
     courseReviews: "/api/admin/course-reviews", // GET: كل مراجعات المواد
     adminCourseReview: (id: string) => `/api/admin/course-reviews/${id}`, // DELETE: حذف مراجعة مادة

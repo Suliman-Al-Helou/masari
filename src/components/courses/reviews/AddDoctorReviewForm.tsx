@@ -91,7 +91,7 @@ function StarPicker({
 // ── Main Component ──
 export function AddDoctorReviewForm({ doctorId, courseCode, doctorName, onSuccess, onCancel }: Props) {
   const { user }    = useAuth()   // ← أضف
-  const toast       = useToast()  // ← غيّر من showToast
+  const {Success,Error}       = useToast()  // ← غيّر من showToast
   const queryClient = useQueryClient()
 
   const {
@@ -128,11 +128,11 @@ export function AddDoctorReviewForm({ doctorId, courseCode, doctorName, onSucces
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctor-reviews',      doctorId, courseCode] })
       queryClient.invalidateQueries({ queryKey: ['user-doctor-review',  doctorId, courseCode] })
-      toast.success(`تم تقييم د. ${doctorName} بنجاح ✨`)  // ← غيّر من showToast
+      Success(`تم تقييم د. ${doctorName} بنجاح ✨`)  // ← غيّر من showToast
       onSuccess?.()
     },
     onError: () => {
-      toast.error('حدث خطأ، حاول مرة أخرى')  // ← غيّر من showToast
+      Error('حدث خطأ، حاول مرة أخرى')  // ← غيّر من showToast
     },
   })
 

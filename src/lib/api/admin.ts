@@ -14,10 +14,13 @@ import type {
   StudentDistributionData,
   PlatformActivityFilters,
   PlatformActivityTrendData,
+  AdminUsersStatus,
+  AdminDoctor,
+  AdminDoctorFilters,
+  CreateAdminDoctorInput,
 } from "@/types/admin";
 import { getPlatformActivityMock } from "@/lib/mocks/platform-activity.mock";
-const useMockData =
-  process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
+const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 // هذا الملف: نقطة الاتصال الوحيدة بين واجهة الأدمن (Components) والـ API.
 // ممنوع أي Component يستدعي supabase مباشرة — يستدعي دوال هذا الملف فقط.
 
@@ -35,12 +38,21 @@ export async function getAdminStats(): Promise<AdminStats> {
 // جلب كل المستخدمين، مع بحث اختياري بالاسم (يُبنى كـ Query String)
 export async function getAllUsers(params?: {
   search?: string;
+  status?: AdminUsersStatus;
 }): Promise<AdminProfile[]> {
+  const query = new URLSearchParams();
   const search = params?.search?.trim();
-  const query = search ? `?search=${encodeURIComponent(search)}` : "";
-  return api.get(API_ENDPOINTS.admin.users + query);
-}
 
+  if (search) {
+    query.set("search", search);
+  }
+
+  query.set("status", params?.status ?? "active");
+
+  return api.get<AdminProfile[]>(
+    `${API_ENDPOINTS.admin.users}?${query.toString()}`,
+  );
+}
 // تغيير دور مستخدم (طالب ⇆ أدمن)
 export async function updateUserRole(
   userId: string,
@@ -53,6 +65,21 @@ export async function updateUserRole(
 export async function deleteUser(userId: string): Promise<void> {
   return api.delete<void>(API_ENDPOINTS.admin.user(userId));
 }
+// Restores a disabled account.
+export async function restoreUser(userId: string): Promise<void> {
+  return api.patch<void>(API_ENDPOINTS.admin.restoreUser(userId), {});
+}
+
+// Saves or clears the optional disable reason.
+export async function updateUserDeletionNote(
+  userId: string,
+  note: string,
+): Promise<void> {
+  return api.patch<void>(API_ENDPOINTS.admin.userDeletionNote(userId), {
+    note,
+  });
+}
+
 
 // =============================================
 // التوزيعات (Charts بالـ Dashboard)
@@ -142,6 +169,44 @@ export async function adminDeleteCourseReview(id: string): Promise<void> {
   return api.delete(API_ENDPOINTS.admin.adminCourseReview(id));
 }
 
+// =============================================
+// إدارة الدكاترة
+// =============================================
+
+export async function getAdminDoctors(
+  filters: AdminDoctorFilters = {},
+): Promise<AdminDoctor[]> {
+  const params = new URLSearchParams();
+
+  if (filters.university) {
+    params.set("university", filters.university);
+  }
+
+  if (filters.major) {
+    params.set("major", filters.major);
+  }
+
+  const query = params.toString();
+
+  return api.get<AdminDoctor[]>(
+    `${API_ENDPOINTS.admin.doctors}${query ? `?${query}` : ""}`,
+  );
+}
+
+export async function createAdminDoctor(
+  input: CreateAdminDoctorInput,
+): Promise<AdminDoctor> {
+  return api.post<AdminDoctor>(
+    API_ENDPOINTS.admin.doctors,
+    input,
+  );
+}
+
+export async function deleteAdminDoctor(id: string): Promise<void> {
+  return api.delete<void>(
+    API_ENDPOINTS.admin.adminDoctor(id),
+  );
+}
 // =============================================
 // مراجعات الدكاترة
 // =============================================

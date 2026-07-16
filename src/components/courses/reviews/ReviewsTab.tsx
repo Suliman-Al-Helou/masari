@@ -7,7 +7,7 @@ import {
   getCourseReviews,
   getCourseReviewStats,
   getUserCourseReview,
-  getDoctorsByCourseMajor,
+  getDoctorsByCourse,
 } from "@/lib/api/reviews";
 import { CourseReviewStats } from "@/components/courses/reviews/CourseReviewStats";
 import { CourseReviewList } from "@/components/courses/reviews/CourseReviewList";
@@ -60,11 +60,12 @@ export function ReviewsTab({ courseId, courseStatus,courseCode,university }: Pro
     staleTime: 60_000,
   });
 
-  const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
-    queryKey: ["course-doctors", courseId],
-    queryFn: () => getDoctorsByCourseMajor(courseId, university!),
-    staleTime: 300_000,
-  });
+const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
+  queryKey: ["course-doctors", courseCode, university],
+  queryFn: () => getDoctorsByCourse(courseCode, university),
+  enabled: Boolean(courseCode && university),
+  staleTime: 300_000,
+});
 
   // ─── Derived ──────────────────────────────────────────────────────────────
 

@@ -28,7 +28,7 @@ export default function StatsGrid({
     ? Math.round((completedCourses / totalCourses) * 100)
     : 0;
 
-  const gpaPercent = Math.round((cumulativeGPA / 4) * 100);
+  const gpaPercent = Math.round(((cumulativeGPA ?? 0) / 4) * 100);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

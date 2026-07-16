@@ -54,7 +54,7 @@ export const ADMIN_NAV_GROUPS = [
   {
     items: [
       {
-        label: "نظرة عامة",
+        label: " الرئيسية",
         href: "/admin",
         icon: LayoutDashboard,
         match: "exact",
@@ -90,6 +90,8 @@ export const ADMIN_NAV_GROUPS = [
       },
     ],
   },
+ 
+  
 ] satisfies readonly NavigationGroup[];
 
 // مؤقتًا حتى نعدّل Sidebar الطالب في الخطوة التالية

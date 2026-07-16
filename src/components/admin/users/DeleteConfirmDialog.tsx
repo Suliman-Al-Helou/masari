@@ -50,14 +50,14 @@ export default function DeleteConfirmDialog({
           id="delete-dialog-title"
           className="mb-2 text-base font-semibold text-foreground"
         >
-          تأكيد الحذف
+          تأكيد تعطيل الحساب
         </h3>
 
         <p
           id="delete-dialog-description"
           className="mb-1 text-sm text-muted-foreground"
         >
-          هل أنت متأكد من حذف المستخدم:
+          هل أنت متأكد من تعطيل المستخدم:
         </p>
 
         <p className="mb-4 text-sm font-medium text-foreground">
@@ -65,7 +65,7 @@ export default function DeleteConfirmDialog({
         </p>
 
         <p className="mb-6 text-xs text-destructive">
-          سيتم حذف كل بياناته — المواد، المهام، والملاحظات — بشكل نهائي.
+          لن تُحذف بياناته، ويمكن للأدمن الأساسي استعادة الحساب لاحقاً.
         </p>
 
         <div className="flex gap-3">
@@ -82,7 +82,7 @@ export default function DeleteConfirmDialog({
             {loading && (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             )}
-            {loading ? "جاري الحذف" : "حذف نهائي"}
+            {loading ? "جاري التعطيل" : "تعطيل الحساب"}
           </motion.button>
 
           <motion.button

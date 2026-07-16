@@ -9,6 +9,8 @@ export type {
   PlatformActivityMetric,
   PlatformActivityPeriod,
 };
+export type AdminUsersStatus = "active" | "deleted";
+
 export type AdminProfile = {
   id: string;
   full_name: string;
@@ -20,6 +22,9 @@ export type AdminProfile = {
   onboarded: boolean;
   show_in_network: boolean;
   created_at: string;
+  deleted_at: string | null;
+  deletion_note: string | null;
+  is_super_admin: boolean;
 };
 
 //* Stats Card Contain This Types
@@ -59,7 +64,6 @@ export interface AdminActivity {
   createdAt: string;
 }
 
-
 //* Number of students in each major
 export type MajorDistribution = {
   major: string;
@@ -79,10 +83,7 @@ export type StudentDistributionFilters = {
 };
 
 //* Defines how student data is grouped
-export type StudentDistributionGroupBy =
-  | "university"
-  | "major"
-  | "comparison";
+export type StudentDistributionGroupBy = "university" | "major" | "comparison";
 
 //* Represents a single item in the distribution chart
 export type StudentDistributionItem = {
@@ -97,8 +98,6 @@ export type StudentDistributionData = {
   total: number;
   items: StudentDistributionItem[];
 };
-
-
 
 export type CreateAdminCourseInput = Omit<AdminCourse, "id" | "created_at">;
 
@@ -157,9 +156,6 @@ export type CourseRow = {
   profiles: { full_name: string }[] | null;
 };
 
-
-
-
 //* A single comparison point in the activity chart
 export interface PlatformActivityPoint {
   currentDate: string;
@@ -177,3 +173,24 @@ export interface PlatformActivityTrendData {
   changePercent: number | null;
   points: PlatformActivityPoint[];
 }
+
+
+//Doctore Type 
+export type AdminDoctor = {
+  id: string;
+  name: string;
+  university: string;
+  major: string;
+  course_code: string | null;
+  course_name: string | null;
+  title: string | null;
+  avatar_url: string | null;
+  created_at: string;
+};
+
+export type { CreateAdminDoctorInput } from "@/schemas/admin-doctor.schema";
+
+export type AdminDoctorFilters = {
+  university?: string;
+  major?: string;
+};

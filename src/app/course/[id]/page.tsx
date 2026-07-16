@@ -140,6 +140,8 @@ export default function CourseDetailPage() {
         <ReviewsTab
           courseId={course.id}
           courseStatus={course.status ?? null}
+          courseCode={course.code}
+          university={course.university}
         />
       )}
 

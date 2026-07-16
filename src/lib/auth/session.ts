@@ -15,12 +15,11 @@ export async function getCurrentUser() {
     return null;
   }
 
-  const { data: profile, error: profileError } =
-    await dbAdmin
-      .from("profiles")
-      .select("role, onboarded, deleted_at")
-      .eq("id", user.id)
-      .maybeSingle();
+  const { data: profile, error: profileError } = await dbAdmin
+    .from("profiles")
+    .select("role, onboarded, deleted_at, is_super_admin")
+    .eq("id", user.id)
+    .maybeSingle();
 
   if (profileError) {
     throw profileError;
@@ -34,5 +33,6 @@ export async function getCurrentUser() {
     userId: user.id,
     role: profile.role ?? "student",
     onboarded: Boolean(profile.onboarded),
+    isSuperAdmin: Boolean(profile.is_super_admin),
   };
 }

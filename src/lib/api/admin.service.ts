@@ -9,26 +9,13 @@ import type {
   AdminDoctorReview,
   AdminStats,
   AdminStatMetric,
-    PlatformActivityFilters,
+  PlatformActivityFilters,
   PlatformActivityTrendData,
+  AdminDoctor,
+  AdminDoctorFilters,
+  CreateAdminDoctorInput,
 } from "@/types/admin";
-// هذا الملف فقط: منطق يحتاج صلاحية dbAdmin (تتجاوز RLS).
-// يُستدعى حصراً من Route Handlers، ممنوع استيراده من أي كود 'use client'.
-
-// =============================================
-// المستخدمين
-// =============================================
-
-// جلب كل المستخدمين (مع فلترة اختيارية بالاسم)، يستثني المحذوفين
-export async function getAllUsers(params?: { search?: string }) {
-  let query = dbAdmin.from("profiles").select("*").is("deleted_at", null);
-
-  if (params?.search) query = query.ilike("full_name", `%${params.search}%`);
-
-  const { data, error } = await query;
-  if (error) throw new Error(error.message);
-  return data;
-}
+import { USER_ROLES } from "@/lib/constants/roles";
 
 // =============================================
 // إحصائيات Dashboard
@@ -106,7 +93,7 @@ export async function getMajorDistribution(): Promise<MajorDistribution[]> {
   const { data, error } = await dbAdmin
     .from("profiles")
     .select("major")
-    .eq("role", "student")
+    .eq("role", USER_ROLES.STUDENT)
     .not("major", "is", null);
   if (error) throw error;
 
@@ -128,7 +115,7 @@ export async function getUniversityDistribution(): Promise<
   const { data, error } = await dbAdmin
     .from("profiles")
     .select("university")
-    .eq("role", "student")
+    .eq("role", USER_ROLES.STUDENT)
     .not("university", "is", null);
   if (error) throw error;
 
@@ -177,7 +164,7 @@ export async function getStudentDistribution(
   let query = dbAdmin
     .from("profiles")
     .select("university, major")
-    .eq("role", "student")
+    .eq("role", USER_ROLES.STUDENT)
     .is("deleted_at", null);
 
   if (university) {
@@ -285,6 +272,119 @@ export async function deleteAdminCourse(id: string): Promise<void> {
 }
 
 // =============================================
+// إدارة الدكاترة
+// =============================================
+export class AdminDoctorValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AdminDoctorValidationError";
+  }
+}
+export async function getAdminDoctors(
+  filters: AdminDoctorFilters = {},
+): Promise<AdminDoctor[]> {
+  let query = dbAdmin
+    .from("doctors")
+    .select(
+      `
+      id,
+      name,
+      university,
+      major,
+      course_code,
+      course_name,
+      created_at
+      `,
+    )
+    .order("name", { ascending: true });
+
+  if (filters.university) {
+    query = query.eq("university", filters.university);
+  }
+
+  if (filters.major) {
+    query = query.eq("major", filters.major);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as AdminDoctor[];
+}
+
+export async function createAdminDoctor(
+  input: CreateAdminDoctorInput,
+): Promise<AdminDoctor> {
+  if (!input.course_code) {
+    throw new AdminDoctorValidationError("المادة مطلوبة");
+  }
+
+  // التحقق من أن المادة مرتبطة فعلًا بالجامعة والتخصص المحددين
+  const { data: course, error: courseError } = await dbAdmin
+    .from("admin_courses")
+    .select("name, code, university, major")
+    .eq("code", input.course_code)
+    .eq("university", input.university)
+    .eq("major", input.major)
+    .maybeSingle();
+
+  if (courseError) {
+    throw new Error(courseError.message);
+  }
+
+  if (!course) {
+    throw new AdminDoctorValidationError(
+      "المادة المحددة غير مرتبطة بهذه الجامعة والتخصص",
+    );
+  }
+
+  const { data, error } = await dbAdmin
+    .from("doctors")
+    .insert({
+      name: input.name,
+      university: course.university,
+      major: course.major,
+      course_code: course.code,
+      course_name: course.name,
+    })
+    .select(
+      `
+      id,
+      name,
+      university,
+      major,
+      course_code,
+      course_name,
+      created_at
+      `,
+    )
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as AdminDoctor;
+}
+
+export async function deleteAdminDoctor(id: string): Promise<boolean> {
+  const { data, error } = await dbAdmin
+    .from("doctors")
+    .delete()
+    .eq("id", id)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return Boolean(data);
+}
+// =============================================
 // مراجعات المواد
 // =============================================
 
@@ -336,7 +436,6 @@ export async function adminDeleteDoctorReview(id: string): Promise<void> {
   const { error } = await dbAdmin.from("doctor_reviews").delete().eq("id", id);
   if (error) throw error;
 }
-
 
 // Database row returned by the activity trend function
 type PlatformActivityTrendRow = {

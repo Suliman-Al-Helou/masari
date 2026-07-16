@@ -35,17 +35,61 @@ export async function POST(request: Request) {
     );
   }
 }
-
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requirePermission(PERMISSION.USERS_MANAGE);
-  if (!auth.ok) return auth.response;
+
+  if (!auth.ok) {
+    return auth.response;
+  }
 
   try {
-    const { data, error } = await dbAdmin.from("admin_courses").select("*");
-    if (error) throw new Error(error.message);
-    return Response.json({ success: true, data });
+    const { searchParams } = new URL(request.url);
+
+    const university = searchParams.get("university")?.trim();
+    const major = searchParams.get("major")?.trim();
+    const year = searchParams.get("year")?.trim();
+    const semester = searchParams.get("semester")?.trim();
+
+    let query = dbAdmin
+      .from("admin_courses")
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (university) {
+      query = query.eq("university", university);
+    }
+
+    if (major) {
+      query = query.eq("major", major);
+    }
+
+    if (year) {
+      query = query.eq("year", year);
+    }
+
+    if (semester) {
+      query = query.eq("semester", semester);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    return Response.json({
+      success: true,
+      data: data ?? [],
+    });
   } catch (error) {
     logger.error(error, "Error fetching admin courses");
-    return Response.json({ success: false, error: "Server error" }, { status: 500 });
+
+    return Response.json(
+      {
+        success: false,
+        error: "تعذر جلب المواد",
+      },
+      { status: 500 },
+    );
   }
 }
