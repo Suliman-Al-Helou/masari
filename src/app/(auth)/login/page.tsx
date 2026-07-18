@@ -59,100 +59,98 @@ export default function LoginPage() {
   };
 
   // ── Sign In ──
- const handleSignIn = async (email: string, password: string) => {
-  setLoading(true);
+  const handleSignIn = async (email: string, password: string) => {
+    setLoading(true);
+    let navigationStarted = false;
+    try {
+      const normalizedEmail = email.trim().toLowerCase();
 
-  try {
-    const normalizedEmail = email.trim().toLowerCase();
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
 
-    const {
-      data: authData,
-      error: authError,
-    } = await supabase.auth.signInWithPassword({
-      email: normalizedEmail,
-      password,
-    });
+      if (authError?.code === "user_banned") {
+        Error("تم تعطيل حسابك", "يرجى التواصل مع إدارة المنصة");
+        return;
+      }
 
-    if (authError?.code === "user_banned") {
-      Error("تم تعطيل حسابك", "يرجى التواصل مع إدارة المنصة");
-      return;
+      if (authError) {
+        console.error("[Login] signIn error:", authError);
+
+        Error("فشل تسجيل الدخول", "البريد أو كلمة المرور غير صحيحة");
+        return;
+      }
+
+      const userId = authData.user?.id;
+
+      if (!userId) {
+        Error("فشل تسجيل الدخول", "لم يتم العثور على جلسة المستخدم");
+        return;
+      }
+
+      // ننتظر قراءة الـ profile بعد اكتمال signIn
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, onboarded, deleted_at")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        console.error("[Login] profile error:", profileError);
+
+        await supabase.auth.signOut();
+
+        Error(
+          "تعذر تحميل الحساب",
+          "تأكد من وجود Profile للمستخدم ومن سياسات RLS",
+        );
+
+        return;
+      }
+
+      if (profile.deleted_at) {
+        await supabase.auth.signOut();
+
+        Error("تم تعطيل حسابك", "يرجى التواصل مع إدارة المنصة");
+        return;
+      }
+
+      const callbackUrl = searchParams.get("callbackUrl");
+
+      const safeStudentCallback =
+        callbackUrl &&
+        callbackUrl.startsWith("/") &&
+        !callbackUrl.startsWith("//") &&
+        !callbackUrl.startsWith("/admin") &&
+        !callbackUrl.startsWith("/login")
+          ? callbackUrl
+          : null;
+
+      let destination = "/";
+
+      if (profile.role === "admin") {
+        destination = "/admin";
+      } else if (!profile.onboarded) {
+        destination = "/onboarding";
+      } else if (safeStudentCallback) {
+        destination = safeStudentCallback;
+      }
+      sessionStorage.removeItem("welcomed");
+      navigationStarted = true;
+      router.replace(destination);
+      // هنا فقط ننفذ الانتقال، بعد انتهاء signIn وقراءة profile
+    } catch (error) {
+      console.error("[Login] unexpected error:", error);
+
+      Error("تعذر تسجيل الدخول", "حدث خطأ غير متوقع، حاول مرة أخرى");
+    } finally {
+      if (!navigationStarted) {
+        setLoading(false);
+      }
     }
-
-    if (authError) {
-      console.error("[Login] signIn error:", authError);
-
-      Error("فشل تسجيل الدخول", "البريد أو كلمة المرور غير صحيحة");
-      return;
-    }
-
-    const userId = authData.user?.id;
-
-    if (!userId) {
-      Error("فشل تسجيل الدخول", "لم يتم العثور على جلسة المستخدم");
-      return;
-    }
-
-    // ننتظر قراءة الـ profile بعد اكتمال signIn
-    const {
-      data: profile,
-      error: profileError,
-    } = await supabase
-      .from("profiles")
-      .select("role, onboarded, deleted_at")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (profileError || !profile) {
-      console.error("[Login] profile error:", profileError);
-
-      await supabase.auth.signOut();
-
-      Error(
-        "تعذر تحميل الحساب",
-        "تأكد من وجود Profile للمستخدم ومن سياسات RLS",
-      );
-
-      return;
-    }
-
-    if (profile.deleted_at) {
-      await supabase.auth.signOut();
-
-      Error("تم تعطيل حسابك", "يرجى التواصل مع إدارة المنصة");
-      return;
-    }
-
-    const callbackUrl = searchParams.get("callbackUrl");
-
-    const safeStudentCallback =
-      callbackUrl &&
-      callbackUrl.startsWith("/") &&
-      !callbackUrl.startsWith("//") &&
-      !callbackUrl.startsWith("/admin") &&
-      !callbackUrl.startsWith("/login")
-        ? callbackUrl
-        : null;
-
-    let destination = "/";
-
-    if (profile.role === "admin") {
-      destination = "/admin";
-    } else if (!profile.onboarded) {
-      destination = "/onboarding";
-    } else if (safeStudentCallback) {
-      destination = safeStudentCallback;
-    }
-
-    // هنا فقط ننفذ الانتقال، بعد انتهاء signIn وقراءة profile
-    window.location.replace(destination);
-  } catch (error) {
-    console.error("[Login] unexpected error:", error);
-
-    Error("تعذر تسجيل الدخول", "حدث خطأ غير متوقع، حاول مرة أخرى");
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   // ── Sign Up ──
   const handleSignUp = async (

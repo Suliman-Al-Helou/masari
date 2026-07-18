@@ -1,7 +1,7 @@
 import { deleteAdminDoctor } from "@/lib/api/admin.service";
 import { PERMISSION } from "@/lib/auth/permissions";
+import { AdminAuthorizationError } from "@/lib/auth/require-admin-actor";
 import { requirePermission } from "@/lib/auth/require-permission";
-import { logger } from "@/lib/logger";
 
 export async function DELETE(
   _request: Request,
@@ -26,7 +26,7 @@ export async function DELETE(
   }
 
   try {
-    const deleted = await deleteAdminDoctor(id);
+    const deleted = await deleteAdminDoctor(auth.session.userId, id);
 
     if (!deleted) {
       return Response.json(
@@ -43,8 +43,15 @@ export async function DELETE(
       message: "تم حذف الدكتور",
     });
   } catch (error) {
-    logger.error(error, "Error deleting admin doctor");
-
+if (error instanceof AdminAuthorizationError) {
+  return Response.json(
+    {
+      success: false,
+      error: error.message,
+    },
+    { status: error.status },
+  );
+}
     return Response.json(
       {
         success: false,

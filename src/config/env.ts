@@ -3,9 +3,7 @@ import "server-only";
 import { z } from "zod";
 
 const envSchema = z.object({
-  NEXT_PUBLIC_SUPABASE_URL: z
-    .string()
-    .url("NEXT_PUBLIC_SUPABASE_URL غير صالح"),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url("NEXT_PUBLIC_SUPABASE_URL غير صالح"),
 
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z
     .string()
@@ -18,6 +16,7 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),
+  NEXT_PUBLIC_USE_MOCK_DATA: z.enum(["true", "false"]).default("false"),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

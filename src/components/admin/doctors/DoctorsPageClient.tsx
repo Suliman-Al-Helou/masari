@@ -8,6 +8,7 @@ import {
   getAdminDoctors,
   deleteAdminDoctor,
   getAdminCourses,
+  updateAdminDoctorCourses,
 } from "@/lib/api/admin";
 import CustomSelect from "@/components/ui/CustomSelect";
 import DoctorsGroupedTable from "./DoctorsGroupedTable";
@@ -16,7 +17,9 @@ import type { AdminDoctor } from "@/types/admin";
 import { AddDoctorForm } from "@/components/admin/doctors/AddDoctorForm";
 import { queryKeys } from "@/lib/api/queryKeys";
 type DoctorExtended = AdminDoctor;
-
+import AsyncErrorState from "@/components/share/AsyncErrorState";
+import { EditDoctorCoursesForm } from "./EditDoctorCoursesForm";
+import { DoctorsMasterDetail } from "./DoctorsMasterDetail";
 // ─── نوع الدكتور الموسّع ─────────────────────────────────────────────────────
 // ملاحظة: تأكد من إضافة العمودين course_code و course_name في جدول doctors بـ Supabase
 
@@ -24,10 +27,17 @@ type DoctorExtended = AdminDoctor;
 
 // ─── الصفحة الرئيسية ──────────────────────────────────────────────────────────
 export default function AdminDoctorsPage() {
-  const { data: courses = [], isLoading: isCoursesLoading } = useQuery({
+  const {
+    data: courses = [],
+    isLoading: isCoursesLoading,
+    isError: isCoursesError,
+    isFetching: isCoursesFetching,
+    refetch: refetchCourses,
+  } = useQuery({
     queryKey: queryKeys.admin.courses(),
     queryFn: () => getAdminCourses(),
     staleTime: 1000 * 60 * 5,
+    meta: { silent: true },
   });
 
   const queryClient = useQueryClient();
@@ -39,9 +49,20 @@ export default function AdminDoctorsPage() {
   const [courseFilter, setCourseFilter] = useState("");
   const [toDelete, setToDelete] = useState<DoctorExtended | null>(null);
   const [showForm, setShowForm] = useState(false);
+  const [doctorToEdit, setDoctorToEdit] = useState<AdminDoctor | null>(null);
+  const [detailsView, setDetailsView] = useState<{
+    doctorId: string;
+    courseCode?: string;
+  } | null>(null);
 
   // ── جلب الدكاترة ──
-  const { data: doctors = [], isLoading } = useQuery({
+  const {
+    data: doctors = [],
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.admin.doctors({
       university: uniFilter || undefined,
       major: majorFilter || undefined,
@@ -52,6 +73,28 @@ export default function AdminDoctorsPage() {
         major: majorFilter || undefined,
       }),
     staleTime: 1000 * 60,
+    meta: {
+      silent: true,
+    },
+  });
+  const updateCoursesMutation = useMutation({
+    meta: { silent: true },
+
+    mutationFn: ({
+      doctorId,
+      courseIds,
+    }: {
+      doctorId: string;
+      courseIds: string[];
+    }) => updateAdminDoctorCourses(doctorId, courseIds),
+
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.doctorsAll(),
+      });
+
+      Success("تم التحديث", "تم تحديث مواد الدكتور بنجاح");
+    },
   });
 
   // المواد المتاحة بناءً على التخصص المختار
@@ -73,7 +116,7 @@ export default function AdminDoctorsPage() {
           ? d.name.includes(search.trim())
           : true;
         const matchCourse = courseFilter
-          ? (d as DoctorExtended).course_code === courseFilter
+          ? d.courses.some((course) => course.code === courseFilter)
           : true;
         return matchSearch && matchCourse;
       }),
@@ -92,25 +135,35 @@ export default function AdminDoctorsPage() {
   );
 
   // ── حذف ──
-const deleteMutation = useMutation({
-  meta: { silent: true },
+  const deleteMutation = useMutation({
+    meta: { silent: true },
 
-  mutationFn: (id: string) => deleteAdminDoctor(id),
+    mutationFn: (id: string) => deleteAdminDoctor(id),
 
-  onSuccess: () => {
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.admin.doctorsAll(),
-    });
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.admin.doctorsAll(),
+      });
 
-    Success("تم الحذف", "تم حذف الدكتور بنجاح");
-    setToDelete(null);
-  },
+      Success("تم الحذف", "تم حذف الدكتور بنجاح");
+      setToDelete(null);
+    },
 
-  onError: () => {
-    Error("خطأ", "فشل حذف الدكتور");
-  },
-});
+    onError: () => {
+      Error("خطأ", "فشل حذف الدكتور");
+    },
+  });
 
+  if (detailsView) {
+    return (
+      <DoctorsMasterDetail
+        doctors={filtered}
+        initialDoctorId={detailsView.doctorId}
+        initialCourseCode={detailsView.courseCode}
+        onBack={() => setDetailsView(null)}
+      />
+    );
+  }
   return (
     <div className="space-y-6" dir="rtl">
       {/* ── رأس الصفحة ── */}
@@ -238,7 +291,15 @@ const deleteMutation = useMutation({
           disabled={isCoursesLoading || availableCoursesForFilter.length === 0}
         />
       </div>
-
+      {isCoursesError && (
+        <AsyncErrorState
+          title="تعذر تحميل المواد"
+          description="لن تعمل فلترة المواد أو تعديل مواد الدكتور حتى يتم تحميلها."
+          onRetry={refetchCourses}
+          isRetrying={isCoursesFetching}
+          className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5"
+        />
+      )}
       {/* فلاتر نشطة */}
       {(uniFilter || majorFilter || courseFilter || search) && (
         <div className="flex flex-wrap items-center gap-2">
@@ -291,18 +352,50 @@ const deleteMutation = useMutation({
           </button>
         </div>
       )}
-
-      <DoctorsGroupedTable
-        grouped={grouped}
-        isLoading={isLoading}
-        hasActiveFilters={Boolean(
-          search || uniFilter || majorFilter || courseFilter,
-        )}
-        canAdd={!showForm}
-        onAdd={() => setShowForm(true)}
-        onDelete={setToDelete}
-      />
-
+      {isError && doctors.length === 0 ? (
+        <AsyncErrorState
+          title="تعذر تحميل الدكاترة"
+          description="تحقق من الاتصال ثم حاول مرة أخرى."
+          onRetry={refetch}
+          isRetrying={isFetching}
+          className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6"
+        />
+      ) : (
+        <DoctorsGroupedTable
+          grouped={grouped}
+          isLoading={isLoading}
+          hasActiveFilters={Boolean(
+            search || uniFilter || majorFilter || courseFilter,
+          )}
+          canAdd={!showForm}
+          onAdd={() => setShowForm(true)}
+          onDelete={setToDelete}
+          onEdit={setDoctorToEdit}
+          onView={(doctor, courseCode) =>
+            setDetailsView({
+              doctorId: doctor.id,
+              courseCode,
+            })
+          }
+        />
+      )}
+      {doctorToEdit && (
+        <EditDoctorCoursesForm
+          doctor={doctorToEdit}
+          courses={courses}
+          isCoursesLoading={isCoursesLoading}
+          isCoursesError={isCoursesError}
+          isCoursesRetrying={isCoursesFetching}
+          onRetryCourses={refetchCourses}
+          onClose={() => setDoctorToEdit(null)}
+          onSave={(courseIds) =>
+            updateCoursesMutation.mutateAsync({
+              doctorId: doctorToEdit.id,
+              courseIds,
+            })
+          }
+        />
+      )}
       {/* ── حوار الحذف ── */}
       {toDelete && (
         <DeleteConfirm

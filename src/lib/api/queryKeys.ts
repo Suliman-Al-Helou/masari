@@ -16,6 +16,14 @@ export const queryKeys = {
       ["admin", "doctors", filters] as const,
     courses: (filters?: Record<string, string>) =>
       ["admin", "courses", filters] as const,
+    doctorReviewDetails: (doctorId: string, courseCode?: string) =>
+      [
+        "admin",
+        "doctors",
+        doctorId,
+        "reviews",
+        { courseCode: courseCode ?? null },
+      ] as const,
     courseReviews: () => ["admin", "course-reviews"] as const,
     doctorReviews: () => ["admin", "doctor-reviews"] as const,
     majorDistribution: () => ["admin", "major-distribution"] as const,

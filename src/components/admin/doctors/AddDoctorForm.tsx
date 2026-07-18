@@ -7,17 +7,21 @@ import { UNIVERSITIES, getMajorsForUniversity } from "@/lib/constants/academic";
 import { createAdminDoctor, getAdminCourses } from "@/lib/api/admin";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { queryKeys } from "@/lib/api/queryKeys";
+import { Search } from "lucide-react";
+
+function normalizeCourseSearch(value: string): string {
+  return value.trim().toLocaleLowerCase("ar").replace(/\s+/g, " ");
+}
 // ─── فورم الإضافة ─────────────────────────────────────────────────────────────
 export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
   const queryClient = useQueryClient();
   const { Success, Error } = useToast();
-
+  const [courseSearch, setCourseSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     university: "",
     major: "",
-    course_code: "",
-    course_name: "",
+    course_ids: [] as string[],
   });
 
   const set = (k: keyof typeof form, v: string) =>
@@ -56,30 +60,52 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
       ),
     [courses, form.university, form.major],
   );
+  const filteredCourses = useMemo(() => {
+    const query = normalizeCourseSearch(courseSearch);
 
+    if (!query) {
+      return availableCourses;
+    }
+
+    return availableCourses.filter((course) =>
+      normalizeCourseSearch(`${course.name} ${course.code}`).includes(query),
+    );
+  }, [availableCourses, courseSearch]);
+
+  const selectedCourses = useMemo(
+    () =>
+      availableCourses.filter((course) => form.course_ids.includes(course.id)),
+    [availableCourses, form.course_ids],
+  );
   const handleUniversityChange = (university: string) => {
     setForm((previous) => ({
       ...previous,
       university,
       major: "",
-      course_code: "",
-      course_name: "",
+      course_ids: [],
     }));
+
+    setCourseSearch("");
   };
 
   // عند تغيير التخصص نمسح المادة
-  const handleMajorChange = (v: string) => {
-    setForm((p) => ({ ...p, major: v, course_code: "", course_name: "" }));
+  const handleMajorChange = (major: string) => {
+    setForm((previous) => ({
+      ...previous,
+      major,
+      course_ids: [],
+    }));
+
+    setCourseSearch("");
   };
 
   // عند اختيار مادة نملأ الاسم والكود معاً
-  const handleCourseChange = (code: string) => {
-    const found = availableCourses.find((course) => course.code === code);
-
-    setForm((p) => ({
-      ...p,
-      course_code: code,
-      course_name: found?.name ?? "",
+  const handleCourseToggle = (courseId: string) => {
+    setForm((previous) => ({
+      ...previous,
+      course_ids: previous.course_ids.includes(courseId)
+        ? previous.course_ids.filter((id) => id !== courseId)
+        : [...previous.course_ids, courseId],
     }));
   };
 
@@ -91,7 +117,7 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
         name: form.name.trim(),
         university: form.university,
         major: form.major,
-        course_code: form.course_code,
+        course_ids: form.course_ids,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({
@@ -102,8 +128,7 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
         name: "",
         university: "",
         major: "",
-        course_code: "",
-        course_name: "",
+        course_ids: [],
       });
       onSuccess();
     },
@@ -114,11 +139,14 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
     { label: "الاسم", done: !!form.name.trim() },
     { label: "الجامعة", done: !!form.university },
     { label: "التخصص", done: !!form.major },
-    { label: "المادة", done: !!form.course_code },
+    { label: "المادة", done: form.course_ids.length > 0 },
   ];
 
   const canSubmit =
-    form.name.trim() && form.university && form.major && form.course_code;
+    form.name.trim() &&
+    form.university &&
+    form.major &&
+    form.course_ids.length > 0;
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-visible">
@@ -276,7 +304,41 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
           <label className="text-xs font-semibold text-foreground">
             المادة الدراسية <span className="text-destructive">*</span>
           </label>
+          {form.university && form.major && (
+            <div className="space-y-2">
+              <div className="relative">
+                <label htmlFor="add-doctor-course-search" className="sr-only">
+                  البحث باسم المادة أو كودها
+                </label>
 
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute start-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                />
+
+                <input
+                  id="add-doctor-course-search"
+                  type="search"
+                  value={courseSearch}
+                  onChange={(event) => setCourseSearch(event.target.value)}
+                  placeholder="ابحث باسم المادة أو كودها..."
+                  autoComplete="off"
+                  disabled={
+                    isCoursesLoading ||
+                    isCoursesError ||
+                    availableCourses.length === 0
+                  }
+                  className="h-11 w-full rounded-xl border border-border bg-background ps-11 pe-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
+                />
+              </div>
+
+              {form.course_ids.length > 0 && (
+                <p className="text-xs text-primary">
+                  تم تحديد {form.course_ids.length} مادة
+                </p>
+              )}
+            </div>
+          )}
           {!form.university || !form.major ? (
             <div className="bg-muted/40 border border-dashed border-border rounded-xl px-4 py-3 flex items-center gap-2 text-muted-foreground">
               <svg
@@ -325,28 +387,35 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
             <div className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
               لا توجد مواد مضافة لهذا التخصص في الجامعة المختارة
             </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
+              لا توجد مادة مطابقة لعبارة البحث.
+            </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {availableCourses.map((c) => (
+              {filteredCourses.map((c) => (
                 <button
-                  key={c.code}
+                  key={c.id}
                   type="button"
-                  onClick={() => handleCourseChange(c.code)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition-all ${
-                    form.course_code === c.code
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background border-border text-foreground hover:border-primary/50 hover:text-primary"
+                  aria-pressed={form.course_ids.includes(c.id)}
+                  onClick={() => handleCourseToggle(c.id)}
+                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
+                    form.course_ids.includes(c.id)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-foreground hover:border-primary/50 hover:text-primary"
                   }`}
                 >
                   <span
-                    className={`font-mono text-[10px] px-1.5 py-0.5 rounded-md ${
-                      form.course_code === c.code
-                        ? "bg-white/20 text-primary-foreground"
+                    dir="ltr"
+                    className={`rounded-md px-1.5 py-0.5 font-mono text-[10px] ${
+                      form.course_ids.includes(c.id)
+                        ? "bg-primary-foreground/20"
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {c.code}
                   </span>
+
                   {c.name}
                 </button>
               ))}
@@ -371,10 +440,8 @@ export function AddDoctorForm({ onSuccess }: { onSuccess: () => void }) {
                 {form.name}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                {form.university} · {form.major} · {form.course_name}{" "}
-                <span className="font-mono text-[10px] bg-muted px-1.5 py-0.5 rounded">
-                  {form.course_code}
-                </span>
+                {form.university} · {form.major} ·{" "}
+                {selectedCourses.map((course) => course.name).join("، ")}{" "}
               </p>
             </div>
             <svg

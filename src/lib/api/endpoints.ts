@@ -22,6 +22,8 @@ export const API_ENDPOINTS = {
     // إدارة الدكاترة
     doctors: "/api/admin/doctors",
     adminDoctor: (id: string) => `/api/admin/doctors/${id}`,
+    doctorCourses: (id: string) => `/api/admin/doctors/${id}/courses`,
+    doctorReviewDetails: (id: string) => `/api/admin/doctors/${id}/reviews`,
     // مراجعات المواد
     courseReviews: "/api/admin/course-reviews", // GET: كل مراجعات المواد
     adminCourseReview: (id: string) => `/api/admin/course-reviews/${id}`, // DELETE: حذف مراجعة مادة

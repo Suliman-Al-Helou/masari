@@ -4,10 +4,9 @@ import {
   getAdminDoctors,
 } from "@/lib/api/admin.service";
 import { PERMISSION } from "@/lib/auth/permissions";
+import { AdminAuthorizationError } from "@/lib/auth/require-admin-actor";
 import { requirePermission } from "@/lib/auth/require-permission";
-import { logger } from "@/lib/logger";
 import { createAdminDoctorSchema } from "@/schemas/admin-doctor.schema";
-
 
 export async function GET(request: Request) {
   const auth = await requirePermission(PERMISSION.DOCTORS_MANAGE);
@@ -19,7 +18,7 @@ export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
 
-    const doctors = await getAdminDoctors({
+    const doctors = await getAdminDoctors(auth.session.userId, {
       university: searchParams.get("university")?.trim() || undefined,
       major: searchParams.get("major")?.trim() || undefined,
     });
@@ -29,8 +28,15 @@ export async function GET(request: Request) {
       data: doctors,
     });
   } catch (error) {
-    logger.error(error, "Error fetching admin doctors");
-
+    if (error instanceof AdminAuthorizationError) {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: error.status },
+      );
+    }
     return Response.json(
       {
         success: false,
@@ -63,7 +69,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const doctor = await createAdminDoctor(result.data);
+    const doctor = await createAdminDoctor(auth.session.userId, result.data);
 
     return Response.json(
       {
@@ -83,7 +89,15 @@ export async function POST(request: Request) {
       );
     }
 
-    logger.error(error, "Error creating admin doctor");
+    if (error instanceof AdminAuthorizationError) {
+      return Response.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: error.status },
+      );
+    }
 
     return Response.json(
       {

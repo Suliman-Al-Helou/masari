@@ -18,8 +18,13 @@ import type {
   AdminDoctor,
   AdminDoctorFilters,
   CreateAdminDoctorInput,
+  AdminDoctorReviewDetails,
 } from "@/types/admin";
 import { getPlatformActivityMock } from "@/lib/mocks/platform-activity.mock";
+import {
+  getAdminDoctorsMock,
+  getAdminDoctorReviewDetailsMock,
+} from "@/lib/mocks/admin-doctors.mock";
 const useMockData = process.env.NEXT_PUBLIC_USE_MOCK_DATA === "true";
 // هذا الملف: نقطة الاتصال الوحيدة بين واجهة الأدمن (Components) والـ API.
 // ممنوع أي Component يستدعي supabase مباشرة — يستدعي دوال هذا الملف فقط.
@@ -79,7 +84,6 @@ export async function updateUserDeletionNote(
     note,
   });
 }
-
 
 // =============================================
 // التوزيعات (Charts بالـ Dashboard)
@@ -153,6 +157,14 @@ export async function createAdminCourse(
   return api.post<AdminCourse>(API_ENDPOINTS.admin.courses, course);
 }
 
+export async function updateAdminDoctorCourses(
+  doctorId: string,
+  courseIds: string[],
+): Promise<void> {
+  return api.patch<void>(API_ENDPOINTS.admin.doctorCourses(doctorId), {
+    course_ids: courseIds,
+  });
+}
 // حذف مادة حسب id
 export async function deleteAdminCourse(id: string): Promise<void> {
   return api.delete(API_ENDPOINTS.admin.adminCourse(id));
@@ -176,6 +188,9 @@ export async function adminDeleteCourseReview(id: string): Promise<void> {
 export async function getAdminDoctors(
   filters: AdminDoctorFilters = {},
 ): Promise<AdminDoctor[]> {
+  if (useMockData) {
+    return getAdminDoctorsMock(filters);
+  }
   const params = new URLSearchParams();
 
   if (filters.university) {
@@ -193,19 +208,36 @@ export async function getAdminDoctors(
   );
 }
 
-export async function createAdminDoctor(
-  input: CreateAdminDoctorInput,
-): Promise<AdminDoctor> {
-  return api.post<AdminDoctor>(
-    API_ENDPOINTS.admin.doctors,
-    input,
+export async function getAdminDoctorReviewDetails(
+  doctorId: string,
+  courseCode?: string,
+): Promise<AdminDoctorReviewDetails> {
+  if (useMockData) {
+  return getAdminDoctorReviewDetailsMock(doctorId, courseCode);
+}
+  const params = new URLSearchParams();
+
+  if (courseCode) {
+    params.set("courseCode", courseCode);
+  }
+
+  const query = params.toString();
+
+  return api.get<AdminDoctorReviewDetails>(
+    `${API_ENDPOINTS.admin.doctorReviewDetails(doctorId)}${
+      query ? `?${query}` : ""
+    }`,
   );
 }
 
+export async function createAdminDoctor(
+  input: CreateAdminDoctorInput,
+): Promise<AdminDoctor> {
+  return api.post<AdminDoctor>(API_ENDPOINTS.admin.doctors, input);
+}
+
 export async function deleteAdminDoctor(id: string): Promise<void> {
-  return api.delete<void>(
-    API_ENDPOINTS.admin.adminDoctor(id),
-  );
+  return api.delete<void>(API_ENDPOINTS.admin.adminDoctor(id));
 }
 // =============================================
 // مراجعات الدكاترة

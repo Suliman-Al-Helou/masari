@@ -34,3 +34,4 @@ export const platformActivityFiltersSchema = z.object({
   metric: platformActivityMetricSchema,
   period: platformActivityPeriodSchema,
 });
+

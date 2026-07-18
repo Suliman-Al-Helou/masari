@@ -14,8 +14,12 @@ import type {
   AdminDoctor,
   AdminDoctorFilters,
   CreateAdminDoctorInput,
+  AdminDoctorReviewDetails,
+  AdminDoctorReviewItem,
 } from "@/types/admin";
 import { USER_ROLES } from "@/lib/constants/roles";
+import { requireAdminActor } from "../auth/require-admin-actor";
+import { PERMISSION } from "@/lib/auth/permissions";
 
 // =============================================
 // إحصائيات Dashboard
@@ -281,18 +285,22 @@ export class AdminDoctorValidationError extends Error {
   }
 }
 export async function getAdminDoctors(
+  actorUserId: string,
   filters: AdminDoctorFilters = {},
 ): Promise<AdminDoctor[]> {
+  await requireAdminActor(actorUserId, PERMISSION.DOCTORS_MANAGE);
+
   let query = dbAdmin
-    .from("doctors")
+    .from("admin_doctors_with_stats")
     .select(
       `
       id,
       name,
       university,
       major,
-      course_code,
-      course_name,
+      courses,
+      average_rating,
+      reviews_count,
       created_at
       `,
     )
@@ -316,51 +324,46 @@ export async function getAdminDoctors(
 }
 
 export async function createAdminDoctor(
+  actorUserId: string,
   input: CreateAdminDoctorInput,
 ): Promise<AdminDoctor> {
-  if (!input.course_code) {
-    throw new AdminDoctorValidationError("المادة مطلوبة");
-  }
+  await requireAdminActor(actorUserId, PERMISSION.DOCTORS_MANAGE, {
+    superAdminOnly: true,
+  });
 
+  const { data: doctorId, error: createError } = await dbAdmin.rpc(
+    "create_doctor_with_courses",
+    {
+      p_name: input.name,
+      p_university: input.university,
+      p_major: input.major,
+      p_course_ids: input.course_ids,
+    },
+  );
   // التحقق من أن المادة مرتبطة فعلًا بالجامعة والتخصص المحددين
-  const { data: course, error: courseError } = await dbAdmin
-    .from("admin_courses")
-    .select("name, code, university, major")
-    .eq("code", input.course_code)
-    .eq("university", input.university)
-    .eq("major", input.major)
-    .maybeSingle();
+  if (createError) {
+    if (createError.code === "P0001") {
+      throw new AdminDoctorValidationError(createError.message);
+    }
 
-  if (courseError) {
-    throw new Error(courseError.message);
-  }
-
-  if (!course) {
-    throw new AdminDoctorValidationError(
-      "المادة المحددة غير مرتبطة بهذه الجامعة والتخصص",
-    );
+    throw new Error(createError.message);
   }
 
   const { data, error } = await dbAdmin
-    .from("doctors")
-    .insert({
-      name: input.name,
-      university: course.university,
-      major: course.major,
-      course_code: course.code,
-      course_name: course.name,
-    })
+    .from("admin_doctors_with_stats")
     .select(
       `
       id,
       name,
       university,
       major,
-      course_code,
-      course_name,
-      created_at
-      `,
+      created_at,
+      courses,
+      average_rating,
+      reviews_count
+    `,
     )
+    .eq("id", doctorId)
     .single();
 
   if (error) {
@@ -369,8 +372,54 @@ export async function createAdminDoctor(
 
   return data as AdminDoctor;
 }
+export class AdminDoctorCoursesError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "AdminDoctorCoursesError";
+  }
+}
 
-export async function deleteAdminDoctor(id: string): Promise<boolean> {
+export async function updateAdminDoctorCourses(
+  actorUserId:string,
+  doctorId: string,
+  courseIds: string[],
+): Promise<void> {
+await requireAdminActor(
+  actorUserId,
+  PERMISSION.DOCTORS_MANAGE,
+);
+  const { error } = await dbAdmin.rpc("replace_doctor_courses", {
+    p_doctor_id: doctorId,
+    p_course_ids: courseIds,
+  });
+
+  if (!error) {
+    return;
+  }
+
+  if (error.code === "P0002") {
+    throw new AdminDoctorCoursesError("الدكتور غير موجود", 404);
+  }
+
+  if (error.code === "22023") {
+    throw new AdminDoctorCoursesError(
+      "إحدى المواد غير مرتبطة بجامعة الدكتور وتخصصه",
+      400,
+    );
+  }
+
+  throw new Error(error.message);
+}
+export async function deleteAdminDoctor(
+  actorUserId: string,
+  id: string,
+): Promise<boolean> {
+  await requireAdminActor(actorUserId, PERMISSION.DOCTORS_MANAGE, {
+    superAdminOnly: true,
+  });
   const { data, error } = await dbAdmin
     .from("doctors")
     .delete()
@@ -413,7 +462,187 @@ export async function adminDeleteCourseReview(id: string): Promise<void> {
 // =============================================
 // مراجعات الدكاترة
 // =============================================
+export class AdminDoctorReviewDetailsError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = "AdminDoctorReviewDetailsError";
+  }
+}
 
+type AdminDoctorReviewRow = {
+  id: string;
+  course_code: string;
+  rating_overall: number;
+  rating_clarity: number;
+  rating_fairness: number;
+  would_retake: boolean;
+  review: string | null;
+  created_at: string;
+  profiles:
+    | {
+        full_name: string;
+        university: string | null;
+      }
+    | Array<{
+        full_name: string;
+        university: string | null;
+      }>
+    | null;
+};
+
+function getReviewProfile(
+  relation: AdminDoctorReviewRow["profiles"],
+): {
+  full_name: string;
+  university: string | null;
+} | null {
+  if (Array.isArray(relation)) {
+    return relation[0] ?? null;
+  }
+
+  return relation;
+}
+
+function calculateReviewAverage(
+  reviews: AdminDoctorReviewItem[],
+  key: "rating_overall" | "rating_clarity" | "rating_fairness",
+): number {
+  if (reviews.length === 0) {
+    return 0;
+  }
+
+  const total = reviews.reduce((sum, review) => sum + review[key], 0);
+
+  return Math.round((total / reviews.length) * 10) / 10;
+}
+
+export async function getAdminDoctorReviewDetails(
+  actorUserId: string,
+  doctorId: string,
+  courseCode?: string,
+): Promise<AdminDoctorReviewDetails> {
+  await requireAdminActor(actorUserId, PERMISSION.DOCTORS_MANAGE);
+
+  const { data: doctorData, error: doctorError } = await dbAdmin
+    .from("admin_doctors_with_stats")
+    .select(
+      `
+      id,
+      name,
+      university,
+      major,
+      courses,
+      average_rating,
+      reviews_count,
+      created_at
+      `,
+    )
+    .eq("id", doctorId)
+    .maybeSingle();
+
+  if (doctorError) {
+    throw new Error(doctorError.message);
+  }
+
+  if (!doctorData) {
+    throw new AdminDoctorReviewDetailsError("الدكتور غير موجود", 404);
+  }
+
+  const rawDoctor = doctorData as unknown as AdminDoctor;
+
+  const doctor: AdminDoctor = {
+    ...rawDoctor,
+    courses: Array.isArray(rawDoctor.courses) ? rawDoctor.courses : [],
+  };
+
+  const selectedCourse = courseCode
+    ? doctor.courses.find((course) => course.code === courseCode)
+    : null;
+
+  if (courseCode && !selectedCourse) {
+    throw new AdminDoctorReviewDetailsError(
+      "المادة غير مرتبطة بهذا الدكتور",
+      400,
+    );
+  }
+
+  let reviewsQuery = dbAdmin
+    .from("doctor_reviews")
+    .select(
+      `
+      id,
+      course_code,
+      rating_overall,
+      rating_clarity,
+      rating_fairness,
+      would_retake,
+      review,
+      created_at,
+      profiles (
+        full_name,
+        university
+      )
+      `,
+    )
+    .eq("doctor_id", doctorId)
+    .order("created_at", { ascending: false });
+
+  if (courseCode) {
+    reviewsQuery = reviewsQuery.eq("course_code", courseCode);
+  }
+
+  const { data: reviewData, error: reviewsError } = await reviewsQuery;
+
+  if (reviewsError) {
+    throw new Error(reviewsError.message);
+  }
+
+  const rows = (reviewData ?? []) as unknown as AdminDoctorReviewRow[];
+
+  const reviews: AdminDoctorReviewItem[] = rows.map((row) => {
+    const profile = getReviewProfile(row.profiles);
+
+    return {
+      id: row.id,
+      course_code: row.course_code,
+      rating_overall: Number(row.rating_overall),
+      rating_clarity: Number(row.rating_clarity),
+      rating_fairness: Number(row.rating_fairness),
+      would_retake: Boolean(row.would_retake),
+      review: row.review,
+      created_at: row.created_at,
+      student: {
+        full_name: profile?.full_name ?? "مستخدم غير متاح",
+        university: profile?.university ?? null,
+      },
+    };
+  });
+
+  const retakeCount = reviews.filter(
+    (review) => review.would_retake,
+  ).length;
+
+  return {
+    doctor,
+    selected_course: selectedCourse ?? null,
+
+    stats: {
+      count: reviews.length,
+      avg_overall: calculateReviewAverage(reviews, "rating_overall"),
+      avg_clarity: calculateReviewAverage(reviews, "rating_clarity"),
+      avg_fairness: calculateReviewAverage(reviews, "rating_fairness"),
+      retake_percent:
+        reviews.length > 0
+          ? Math.round((retakeCount / reviews.length) * 100)
+          : 0,
+    },
+
+    reviews,
+  };
+}
 // جلب كل مراجعات الدكاترة، مع اسم الطالب، اسم الدكتور، واسم المادة (Join)
 export async function adminGetAllDoctorReviews(): Promise<AdminDoctorReview[]> {
   const { data, error } = await dbAdmin

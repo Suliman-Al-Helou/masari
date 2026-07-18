@@ -23,6 +23,8 @@ export function DeleteConfirm({
         alignItems: "center",
         justifyContent: "center",
       }}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50"
     >
       <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl">

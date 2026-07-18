@@ -89,7 +89,6 @@ export async function getDoctors(
   if (error) throw error;
   return (data ?? []) as Doctor[];
 }
-
 export async function getDoctorsByCourse(
   courseCode: string,
   university: string,
@@ -107,8 +106,6 @@ export async function getDoctorsByCourse(
 
   return (data ?? []) as Doctor[];
 }
-
-
 
 
 // ══════════════════════════════════════════════

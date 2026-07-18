@@ -174,18 +174,50 @@ export interface PlatformActivityTrendData {
   points: PlatformActivityPoint[];
 }
 
-
-//Doctore Type 
+export type AdminDoctorCourse = {
+  id: string;
+  code: string;
+  name: string;
+};
+//Doctore Type
 export type AdminDoctor = {
   id: string;
   name: string;
   university: string;
   major: string;
-  course_code: string | null;
-  course_name: string | null;
-  title: string | null;
-  avatar_url: string | null;
+  courses: AdminDoctorCourse[];
+  average_rating: number | null;
+  reviews_count: number;
   created_at: string;
+};
+export type AdminDoctorReviewItem = {
+  id: string;
+  course_code: string;
+  rating_overall: number;
+  rating_clarity: number;
+  rating_fairness: number;
+  would_retake: boolean;
+  review: string | null;
+  created_at: string;
+  student: {
+    full_name: string;
+    university: string | null;
+  };
+};
+
+export type AdminDoctorReviewStats = {
+  count: number;
+  avg_overall: number;
+  avg_clarity: number;
+  avg_fairness: number;
+  retake_percent: number;
+};
+
+export type AdminDoctorReviewDetails = {
+  doctor: AdminDoctor;
+  selected_course: AdminDoctorCourse | null;
+  stats: AdminDoctorReviewStats;
+  reviews: AdminDoctorReviewItem[];
 };
 
 export type { CreateAdminDoctorInput } from "@/schemas/admin-doctor.schema";
