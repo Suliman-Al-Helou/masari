@@ -101,20 +101,13 @@ async function deactivateConnection(userId: string) {
 async function getConnection(
   userId: string,
 ): Promise<GoogleClassroomConnectionRow> {
-  const { data, error } = await dbAdmin
-    .from(CONNECTION_TABLE)
-    .select(
-      [
-        "access_token_encrypted",
-        "refresh_token_encrypted",
-        "token_type",
-        "granted_scopes",
-        "expires_at",
-        "is_active",
-      ].join(","),
-    )
-    .eq("user_id", userId)
-    .maybeSingle();
+ const { data, error } = await dbAdmin
+  .from("google_classroom_connections")
+  .select(
+    "access_token_encrypted,refresh_token_encrypted,expires_at,is_active,token_type,granted_scopes",
+  )
+  .eq("user_id", userId)
+  .maybeSingle();
 
   if (error) {
     throw new GoogleClassroomClientError(

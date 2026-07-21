@@ -23,36 +23,18 @@ const COURSES_TABLE = "google_classroom_courses";
 const SUBMISSIONS_TABLE =
   "google_classroom_submissions";
 
-const TASK_FIELDS = [
-  "id",
-  "course_id",
-  "google_course_id",
-  "google_coursework_id",
-  "title",
-  "description",
-  "work_type",
-  "classroom_state",
-  "task_status",
-  "alternate_link",
-  "max_points",
-  "due_at",
-  "associated_with_developer",
-  "direct_submission_eligible",
-  "google_creation_time",
-  "google_updated_at",
-  "last_synced_at",
-].join(",");
+/*
+ * Keep select fields as literal strings.
+ * Using array.join() causes GenericStringError.
+ */
+const TASK_FIELDS =
+  "id,course_id,google_course_id,google_coursework_id,title,description,work_type,classroom_state,task_status,alternate_link,max_points,due_at,associated_with_developer,direct_submission_eligible,google_creation_time,google_updated_at,last_synced_at" as const;
 
-const SUBMISSION_FIELDS = [
-  "id",
-  "task_id",
-  "google_submission_id",
-  "submission_state",
-  "is_late",
-  "assigned_grade",
-  "draft_grade",
-  "alternate_link",
-].join(",");
+const COURSE_FIELDS =
+  "id,name,section,alternate_link" as const;
+
+const SUBMISSION_FIELDS =
+  "id,task_id,google_submission_id,submission_state,is_late,assigned_grade,draft_grade,alternate_link" as const;
 
 type TaskRow = {
   id: string;
@@ -97,12 +79,17 @@ type SubmissionRow = {
   alternate_link: string | null;
 };
 
-function clampLimit(limit: number | undefined): number {
+function clampLimit(
+  limit: number | undefined,
+): number {
   if (!limit) {
     return 100;
   }
 
-  return Math.min(Math.max(limit, 1), 200);
+  return Math.min(
+    Math.max(limit, 1),
+    200,
+  );
 }
 
 function createEmptySummary(): LocalClassroomTasksSummary {
@@ -118,7 +105,9 @@ function createEmptySummary(): LocalClassroomTasksSummary {
   };
 }
 
-function getTaskTimestamp(task: TaskRow): number {
+function getTaskTimestamp(
+  task: TaskRow,
+): number {
   const value =
     task.due_at ??
     task.google_updated_at ??
@@ -135,7 +124,9 @@ function getTaskTimestamp(task: TaskRow): number {
     : timestamp;
 }
 
-function sortTasks(tasks: TaskRow[]): TaskRow[] {
+function sortTasks(
+  tasks: TaskRow[],
+): TaskRow[] {
   const statusOrder: Record<
     LocalClassroomTaskStatus,
     number
@@ -147,20 +138,22 @@ function sortTasks(tasks: TaskRow[]): TaskRow[] {
     returned: 4,
   };
 
-  return [...tasks].sort((left, right) => {
-    const statusDifference =
-      statusOrder[left.task_status] -
-      statusOrder[right.task_status];
+  return [...tasks].sort(
+    (left, right) => {
+      const statusDifference =
+        statusOrder[left.task_status] -
+        statusOrder[right.task_status];
 
-    if (statusDifference !== 0) {
-      return statusDifference;
-    }
+      if (statusDifference !== 0) {
+        return statusDifference;
+      }
 
-    return (
-      getTaskTimestamp(left) -
-      getTaskTimestamp(right)
-    );
-  });
+      return (
+        getTaskTimestamp(left) -
+        getTaskTimestamp(right)
+      );
+    },
+  );
 }
 
 function calculateSummary(
@@ -197,8 +190,10 @@ function calculateSummary(
       }
 
       if (
-        task.submission?.assignedGrade !== null &&
-        task.submission?.assignedGrade !== undefined
+        task.submission
+          ?.assignedGrade !== null &&
+        task.submission
+          ?.assignedGrade !== undefined
       ) {
         summary.graded += 1;
       }
@@ -216,23 +211,35 @@ function mapTask(
 ): LocalClassroomTask {
   return {
     id: task.id,
+
     googleCourseworkId:
       task.google_coursework_id,
-    googleCourseId: task.google_course_id,
+
+    googleCourseId:
+      task.google_course_id,
 
     title: task.title,
     description: task.description,
 
     workType: task.work_type,
-    classroomState: task.classroom_state,
+
+    classroomState:
+      task.classroom_state,
+
     status: task.task_status,
 
-    alternateLink: task.alternate_link,
-    maxPoints: task.max_points,
-    dueAt: task.due_at,
+    alternateLink:
+      task.alternate_link,
+
+    maxPoints:
+      task.max_points,
+
+    dueAt:
+      task.due_at,
 
     associatedWithDeveloper:
       task.associated_with_developer,
+
     directSubmissionEligible:
       task.direct_submission_eligible,
 
@@ -240,19 +247,30 @@ function mapTask(
       id: course.id,
       name: course.name,
       section: course.section,
-      alternateLink: course.alternate_link,
+
+      alternateLink:
+        course.alternate_link,
     },
 
     submission: submission
       ? {
           id: submission.id,
+
           googleSubmissionId:
             submission.google_submission_id,
-          state: submission.submission_state,
-          late: submission.is_late,
+
+          state:
+            submission.submission_state,
+
+          late:
+            submission.is_late,
+
           assignedGrade:
             submission.assigned_grade,
-          draftGrade: submission.draft_grade,
+
+          draftGrade:
+            submission.draft_grade,
+
           alternateLink:
             submission.alternate_link,
         }
@@ -260,8 +278,12 @@ function mapTask(
 
     googleCreationTime:
       task.google_creation_time,
-    googleUpdatedAt: task.google_updated_at,
-    lastSyncedAt: task.last_synced_at,
+
+    googleUpdatedAt:
+      task.google_updated_at,
+
+    lastSyncedAt:
+      task.last_synced_at,
   };
 }
 
@@ -289,8 +311,10 @@ export async function getLocalGoogleClassroomTasks(
     );
   }
 
-  const { data: taskData, error: taskError } =
-    await query;
+  const {
+    data: taskData,
+    error: taskError,
+  } = await query;
 
   if (taskError) {
     throw new Error(
@@ -300,7 +324,10 @@ export async function getLocalGoogleClassroomTasks(
 
   const taskRows = sortTasks(
     (taskData ?? []) as TaskRow[],
-  ).slice(0, clampLimit(options.limit));
+  ).slice(
+    0,
+    clampLimit(options.limit),
+  );
 
   if (taskRows.length === 0) {
     return {
@@ -311,7 +338,9 @@ export async function getLocalGoogleClassroomTasks(
 
   const courseRowIds = Array.from(
     new Set(
-      taskRows.map((task) => task.course_id),
+      taskRows.map(
+        (task) => task.course_id,
+      ),
     ),
   );
 
@@ -320,7 +349,10 @@ export async function getLocalGoogleClassroomTasks(
   );
 
   const [
-    { data: courseData, error: courseError },
+    {
+      data: courseData,
+      error: courseError,
+    },
     {
       data: submissionData,
       error: submissionError,
@@ -328,9 +360,7 @@ export async function getLocalGoogleClassroomTasks(
   ] = await Promise.all([
     dbAdmin
       .from(COURSES_TABLE)
-      .select(
-        "id,name,section,alternate_link",
-      )
+      .select(COURSE_FIELDS)
       .eq("user_id", userId)
       .eq("is_active", true)
       .in("id", courseRowIds),
@@ -355,42 +385,59 @@ export async function getLocalGoogleClassroomTasks(
     );
   }
 
-  const coursesById = new Map(
-    ((courseData ?? []) as CourseRow[]).map(
-      (course) => [course.id, course],
-    ),
-  );
+  const courseRows =
+    (courseData ?? []) as CourseRow[];
 
-  const submissionsByTaskId = new Map(
-    (
-      (submissionData ?? []) as SubmissionRow[]
-    ).map((submission) => [
-      submission.task_id,
-      submission,
+  const submissionRows =
+    (submissionData ??
+      []) as SubmissionRow[];
+
+  const coursesById = new Map(
+    courseRows.map((course) => [
+      course.id,
+      course,
     ]),
   );
 
-  const tasks = taskRows.flatMap((task) => {
-    const course = coursesById.get(
-      task.course_id,
+  const submissionsByTaskId =
+    new Map(
+      submissionRows.map(
+        (submission) => [
+          submission.task_id,
+          submission,
+        ],
+      ),
     );
 
-    if (!course) {
-      return [];
-    }
+  const tasks: LocalClassroomTask[] =
+    taskRows.flatMap((task) => {
+      const course =
+        coursesById.get(
+          task.course_id,
+        );
 
-    return [
-      mapTask(
-        task,
-        course,
-        submissionsByTaskId.get(task.id),
-      ),
-    ];
-  });
+      if (!course) {
+        return [];
+      }
+
+      const submission =
+        submissionsByTaskId.get(
+          task.id,
+        );
+
+      return [
+        mapTask(
+          task,
+          course,
+          submission,
+        ),
+      ];
+    });
 
   return {
     tasks,
-    summary: calculateSummary(tasks),
+    summary:
+      calculateSummary(tasks),
   };
 }
 
@@ -398,14 +445,16 @@ export async function getLocalGoogleClassroomTaskById(
   userId: string,
   taskId: string,
 ): Promise<LocalClassroomTask | null> {
-  const { data: taskData, error: taskError } =
-    await dbAdmin
-      .from(TASKS_TABLE)
-      .select(TASK_FIELDS)
-      .eq("id", taskId)
-      .eq("user_id", userId)
-      .eq("is_active", true)
-      .maybeSingle();
+  const {
+    data: taskData,
+    error: taskError,
+  } = await dbAdmin
+    .from(TASKS_TABLE)
+    .select(TASK_FIELDS)
+    .eq("id", taskId)
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
 
   if (taskError) {
     throw new Error(
@@ -417,10 +466,14 @@ export async function getLocalGoogleClassroomTaskById(
     return null;
   }
 
-  const task = taskData as TaskRow;
+  const task =
+    taskData as TaskRow;
 
   const [
-    { data: courseData, error: courseError },
+    {
+      data: courseData,
+      error: courseError,
+    },
     {
       data: submissionData,
       error: submissionError,
@@ -428,9 +481,7 @@ export async function getLocalGoogleClassroomTaskById(
   ] = await Promise.all([
     dbAdmin
       .from(COURSES_TABLE)
-      .select(
-        "id,name,section,alternate_link",
-      )
+      .select(COURSE_FIELDS)
       .eq("id", task.course_id)
       .eq("user_id", userId)
       .eq("is_active", true)
@@ -461,11 +512,16 @@ export async function getLocalGoogleClassroomTaskById(
     return null;
   }
 
+  const course =
+    courseData as CourseRow;
+
+  const submission = submissionData
+    ? (submissionData as SubmissionRow)
+    : undefined;
+
   return mapTask(
     task,
-    courseData as CourseRow,
-    submissionData
-      ? (submissionData as SubmissionRow)
-      : undefined,
+    course,
+    submission,
   );
 }
