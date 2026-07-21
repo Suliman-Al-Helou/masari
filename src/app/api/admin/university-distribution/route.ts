@@ -4,7 +4,7 @@ import { getUniversityDistribution } from "@/lib/api/admin.service";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+  const auth = await requirePermission(PERMISSION.DASHBOARD_VIEW);
 
   if (!auth.ok) return auth.response;
 
@@ -19,7 +19,10 @@ export async function GET() {
     logger.error(error, "Error fetching admin University Distribution");
 
     return Response.json(
-      { success: false, error: "Failed to fetch admin University Distribution" },
+      {
+        success: false,
+        error: "Failed to fetch admin University Distribution",
+      },
       { status: 500 },
     );
   }

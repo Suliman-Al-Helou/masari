@@ -1,95 +1,81 @@
+import {
+  adminCourseListQuerySchema,
+  createAdminCourseSchema,
+} from "@/schemas/admin-course.schema";
+import {
+  AdminCourseServiceError,
+  createManagedCourse,
+  listAdminCourses,
+} from "@/lib/api/admin-course.service";
 import { PERMISSION } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-permission";
-import { dbAdmin } from "@/lib/db/server-only";
 import { logger } from "@/lib/logger";
-import type { CreateAdminCourseInput } from "@/types/admin";
 
-export async function POST(request: Request) {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+function errorResponse(error: unknown, context: string) {
+  if (error instanceof AdminCourseServiceError) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: error.status },
+    );
+  }
+
+  logger.error(error, context);
+  return Response.json(
+    { success: false, error: "تعذر تنفيذ العملية" },
+    { status: 500 },
+  );
+}
+
+export async function GET(request: Request) {
+  const auth = await requirePermission(PERMISSION.COURSES_MANAGE);
   if (!auth.ok) return auth.response;
 
-  const body: CreateAdminCourseInput = await request.json();
+  const raw = Object.fromEntries(new URL(request.url).searchParams.entries());
+  const parsed = adminCourseListQuerySchema.safeParse(raw);
 
-  if (!body.name || !body.code) {
+  if (!parsed.success) {
     return Response.json(
-      { success: false, error: "name و code مطلوبين" },
+      { success: false, error: "فلاتر المواد غير صالحة" },
+      { status: 400 },
+    );
+  }
+
+  if (parsed.data.status === "deleted" && !auth.session.isSuperAdmin) {
+    return Response.json(
+      { success: false, error: "المواد المحذوفة متاحة للأدمن الأساسي فقط" },
+      { status: 403 },
+    );
+  }
+
+  try {
+    const data = await listAdminCourses(parsed.data);
+    return Response.json({ success: true, data });
+  } catch (error) {
+    return errorResponse(error, "فشل جلب بيانات المواد");
+  }
+}
+
+export async function POST(request: Request) {
+  const auth = await requirePermission(PERMISSION.COURSES_MANAGE);
+  if (!auth.ok) return auth.response;
+
+  const body = await request.json().catch(() => null);
+  const parsed = createAdminCourseSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return Response.json(
+      {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? "بيانات المادة غير صالحة",
+      },
       { status: 400 },
     );
   }
 
   try {
-    const { data, error } = await dbAdmin
-      .from("admin_courses")
-      .insert(body)
-      .select()
-      .single();
-
-    if (error) throw new Error(error.message);
-
-    return Response.json({ success: true, data });
+    const data = await createManagedCourse(parsed.data);
+    return Response.json({ success: true, data }, { status: 201 });
   } catch (error) {
-    logger.error(error, "Error creating admin course");
-    return Response.json(
-      { success: false, error: "Server error" },
-      { status: 500 },
-    );
-  }
-}
-export async function GET(request: Request) {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
-
-  if (!auth.ok) {
-    return auth.response;
-  }
-
-  try {
-    const { searchParams } = new URL(request.url);
-
-    const university = searchParams.get("university")?.trim();
-    const major = searchParams.get("major")?.trim();
-    const year = searchParams.get("year")?.trim();
-    const semester = searchParams.get("semester")?.trim();
-
-    let query = dbAdmin
-      .from("admin_courses")
-      .select("*")
-      .order("name", { ascending: true });
-
-    if (university) {
-      query = query.eq("university", university);
-    }
-
-    if (major) {
-      query = query.eq("major", major);
-    }
-
-    if (year) {
-      query = query.eq("year", year);
-    }
-
-    if (semester) {
-      query = query.eq("semester", semester);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return Response.json({
-      success: true,
-      data: data ?? [],
-    });
-  } catch (error) {
-    logger.error(error, "Error fetching admin courses");
-
-    return Response.json(
-      {
-        success: false,
-        error: "تعذر جلب المواد",
-      },
-      { status: 500 },
-    );
+    return errorResponse(error, "فشل اضافة مادة");
   }
 }

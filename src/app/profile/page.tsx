@@ -13,7 +13,7 @@ import {
   getYearsForMajor,
 } from "@/lib/constants/academic";
 import { supabase } from "@/lib/db/client";
-
+import {ConnectGoogleClassroomButton}  from "@/components/profile/ConnectGoogleClassroomButton";
 // AutocompleteInput و ChipsRow — بدون تغيير
 
 const PROFILE_COVER_IMAGE = "/images/background-profile.png";
@@ -54,74 +54,60 @@ export default function ProfilePage() {
     });
   }, [user]);
 
- const handleSave = async () => {
-  if (!user) return;
+  const handleSave = async () => {
+    if (!user) return;
 
-  const normalizedName = form.full_name.trim();
+    const normalizedName = form.full_name.trim();
 
-  if (normalizedName.length < 2) {
-    Error(
-      "الاسم غير صحيح",
-      "الاسم يجب أن يتكون من حرفين على الأقل",
-    );
-
-    return;
-  }
-
-  setSaving(true);
-
-  try {
-    const [
-      { error: dbError },
-      { error: authError },
-    ] = await Promise.all([
-      updateProfile(user.id, {
-        full_name: normalizedName,
-        university: form.university,
-        major: form.major,
-        semester:
-          form.year === "خريج"
-            ? "خريج"
-            : `${form.year} - ${form.semester}`,
-        total_credits: Number(form.total_credits),
-        degree_type: form.degree_type,
-      }),
-
-      supabase.auth.updateUser({
-        data: {
-          full_name: normalizedName,
-        },
-      }),
-    ]);
-
-    if (dbError || authError) {
-      Error(
-        "حدث خطأ",
-        "تعذر تحديث بيانات الحساب",
-      );
+    if (normalizedName.length < 2) {
+      Error("الاسم غير صحيح", "الاسم يجب أن يتكون من حرفين على الأقل");
 
       return;
     }
 
-    await refreshProfile();
+    setSaving(true);
 
-    setForm((current) => ({
-      ...current,
-      full_name: normalizedName,
-    }));
+    try {
+      const [{ error: dbError }, { error: authError }] = await Promise.all([
+        updateProfile(user.id, {
+          full_name: normalizedName,
+          university: form.university,
+          major: form.major,
+          semester:
+            form.year === "خريج" ? "خريج" : `${form.year} - ${form.semester}`,
+          total_credits: Number(form.total_credits),
+          degree_type: form.degree_type,
+        }),
 
-    Success("تم الحفظ ✅", "تم تحديث بياناتك");
+        supabase.auth.updateUser({
+          data: {
+            full_name: normalizedName,
+          },
+        }),
+      ]);
 
-    setEditMode(false);
-  } catch {
-    Error(
-      "حدث خطأ",
-      "تعذر تحديث بيانات الحساب",
-    );
-  } finally {
-    setSaving(false);
-  }
-};
+      if (dbError || authError) {
+        Error("حدث خطأ", "تعذر تحديث بيانات الحساب");
+
+        return;
+      }
+
+      await refreshProfile();
+
+      setForm((current) => ({
+        ...current,
+        full_name: normalizedName,
+      }));
+
+      Success("تم الحفظ ✅", "تم تحديث بياناتك");
+
+      setEditMode(false);
+    } catch {
+      Error("حدث خطأ", "تعذر تحديث بيانات الحساب");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const initials = form.full_name
     ? form.full_name
@@ -362,6 +348,18 @@ export default function ProfilePage() {
             </button>
           </div>
         )}
+        {/* GOOGLE CLASSROOM INTEGRATION */}
+        <div className="mt-4 rounded-2xl border border-border bg-card p-6">
+          <h2 className="mb-1 text-base font-bold text-foreground">
+            ربط المنصات التعليمية
+          </h2>
+
+          <p className="mb-4 text-sm text-muted-foreground">
+            اربط حسابك لاستقبال الواجبات والامتحانات من Google Classroom.
+          </p>
+
+          <ConnectGoogleClassroomButton />
+        </div>
       </div>
 
       <style>{`

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { BookOpen, PlusCircle, MinusCircle, Loader2 } from "lucide-react";
 import AcademicProgress from "@/components/academic-path/AcademicProgress";
 import { getCourses, addCourse, deleteCourse } from "@/lib/api/api";
-import { getAdminCourses } from "@/lib/api/admin";
+import { getCourseCatalog } from "@/lib/api/course-catalog";
 import { useAuth } from "@/lib/context/AuthContext";
 import { useToast } from "@/lib/context/ToastContext";
 import { SEMESTERS } from "@/lib/constants/academic";
@@ -56,7 +56,7 @@ export default function AcademicPathPage() {
     (async () => {
       setSemLoading(true);
       try {
-        const data = await getAdminCourses({
+        const data = await getCourseCatalog({
           university: profile.university ?? undefined,
           major: profile.major ?? undefined,
           semester: selectedSem,
@@ -83,6 +83,7 @@ export default function AcademicPathPage() {
     try {
       const newCourse = await addCourse({
         user_id: user.id,
+        admin_course_id: ac.id,
         name: ac.name,
         code: ac.code,
         credits: ac.credits,
@@ -90,6 +91,8 @@ export default function AcademicPathPage() {
         status: "قيد الدراسة",
         semester: selectedSem,
         year: ac.year ?? undefined,
+        university: ac.university ?? undefined,
+        major: ac.major ?? undefined,
       });
       setCourses((p) => [newCourse, ...p]);
       Success("تمت الإضافة ✅", `${ac.name} أُضيفت للفصل الحالي`);

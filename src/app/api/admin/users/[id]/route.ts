@@ -20,10 +20,7 @@ export async function DELETE(
 
   try {
     // Soft-disables the user and blocks Auth access.
-    await disableManagedUser(
-      auth.session.userId,
-      targetUserId,
-    );
+    await disableManagedUser(auth.session.userId, targetUserId);
 
     return Response.json({
       success: true,

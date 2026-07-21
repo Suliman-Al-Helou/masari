@@ -4,9 +4,13 @@ import { formatDistanceToNow } from 'date-fns'
 import { ar } from 'date-fns/locale'
 import { CourseReview } from '@/lib/api/reviews'
 import Image from 'next/image'
+import { Flag, Loader2 } from 'lucide-react'
 
 interface Props {
   reviews: CourseReview[]
+  currentUserId?: string | null
+  reportingReviewId?: string | null
+  onReport?: (reviewId: string) => void
 }
 
 // ── Avatar ──
@@ -81,7 +85,12 @@ function Badge({ label, value, labelMap }: {
 }
 
 // ── Main Component ──
-export function CourseReviewList({ reviews }: Props) {
+export function CourseReviewList({
+  reviews,
+  currentUserId,
+  reportingReviewId,
+  onReport,
+}: Props) {
   if (reviews.length === 0) {
     return (
       <div className="py-8 text-center text-muted-foreground text-sm">
@@ -117,7 +126,25 @@ export function CourseReviewList({ reviews }: Props) {
                     </span>
                     <MiniStars value={review.rating_overall} />  {/* ← صح */}
                   </div>
-                  <span className="text-xs text-muted-foreground">{timeAgo}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">{timeAgo}</span>
+                    {onReport && review.user_id !== currentUserId && (
+                      <button
+                        type="button"
+                        onClick={() => onReport(review.id)}
+                        disabled={reportingReviewId === review.id}
+                        aria-label="الإبلاغ عن الرأي"
+                        title="الإبلاغ عن الرأي"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                      >
+                        {reportingReviewId === review.id ? (
+                          <Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Flag aria-hidden="true" className="h-4 w-4" />
+                        )}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap gap-1.5 mb-2">

@@ -99,8 +99,6 @@ export type StudentDistributionData = {
   items: StudentDistributionItem[];
 };
 
-export type CreateAdminCourseInput = Omit<AdminCourse, "id" | "created_at">;
-
 export type AdminCourse = {
   id: string;
   name: string;
@@ -111,30 +109,130 @@ export type AdminCourse = {
   year: string | null;
   university: string | null;
   major: string | null;
+  description: string | null;
+  teaching_language: string | null;
   created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+  reviews_count: number;
+  rating_distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+  average_rating: number | null;
+  average_difficulty: number | null;
+  average_workload: number | null;
+  average_content_quality: number | null;
+  retake_percent: number | null;
+  prerequisite_ids?: string[];
+  prerequisites?: AdminCoursePrerequisite[];
 };
 
+export type AdminCoursePrerequisite = Pick<
+  AdminCourse,
+  "id" | "name" | "code"
+>;
+
+export type AdminCourseSort =
+  | "created_desc"
+  | "name_asc"
+  | "code_asc"
+  | "rating_desc"
+  | "rating_asc"
+  | "reviews_desc";
+
+export type AdminCourseFilters = {
+  university?: string;
+  major?: string;
+  semester?: string;
+  year?: string;
+  search?: string;
+  sort?: AdminCourseSort;
+  status?: "active" | "deleted";
+  page?: number;
+  pageSize?: number;
+};
+
+export type AdminCoursePage = {
+  items: AdminCourse[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
+
+export type AdminCourseReviewStatus = "published" | "hidden" | "rejected";
+
+export type AdminCourseReviewItem = {
+  id: string;
+  rating_overall: number | null;
+  rating_difficulty: number | null;
+  rating_workload: number | null;
+  content_quality: number | null;
+  would_retake: boolean;
+  review: string | null;
+  tips: string | null;
+  semester_taken: string | null;
+  status: AdminCourseReviewStatus;
+  created_at: string;
+  student: {
+    full_name: string;
+    university: string | null;
+  } | null;
+};
+
+export type AdminCourseDetails = {
+  course: AdminCourse;
+  reviews: AdminCourseReviewItem[];
+  rating_distribution: Record<1 | 2 | 3 | 4 | 5, number>;
+};
+
+export type {
+  CreateAdminCourseInput,
+  UpdateAdminCourseInput,
+} from "@/schemas/admin-course.schema";
 export type AdminCourseReview = {
   id: string;
-  rating: number;
-  workload: number;
-  difficulty: number;
-  comment: string | null;
+  admin_course_id: string | null;
+  course_code: string;
+  university: string | null;
+  rating_overall: number;
+  rating_difficulty: number;
+  rating_workload: number;
+  content_quality: number | null;
+  status: AdminCourseReviewStatus;
+  would_retake: boolean;
+  review: string | null;
   created_at: string;
-  profiles: { full_name: string; university: string | null };
-  courses: { name: string; code: string | null };
+  profiles: {
+    full_name: string;
+    university: string | null;
+  } | null;
+  courses: {
+    name: string;
+    code: string | null;
+  } | null;
 };
 
 export type AdminDoctorReview = {
   id: string;
-  rating: number;
-  comment: string | null;
+  course_code: string;
+  rating_overall: number;
+  rating_clarity: number;
+  rating_fairness: number;
+  would_retake: boolean;
+  review: string | null;
   created_at: string;
-  profiles: { full_name: string; university: string | null };
-  doctors: { name: string; title: string | null };
-  courses: { name: string; code: string | null };
+  profiles: {
+    full_name: string;
+    university: string | null;
+  } | null;
+  doctors: {
+    name: string;
+    title: string | null;
+  } | null;
+  courses: {
+    name: string;
+    code: string | null;
+  } | null;
 };
-
 export type NoteRow = {
   id: string;
   title: string;

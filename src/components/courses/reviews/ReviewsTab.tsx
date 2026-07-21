@@ -1,14 +1,16 @@
 // components/course/reviews/ReviewsTab.tsx
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/lib/context/AuthContext";
 import {
   getCourseReviews,
   getCourseReviewStats,
   getUserCourseReview,
   getDoctorsByCourse,
+  reportPublishedCourseReview,
 } from "@/lib/api/reviews";
+import { useToast } from "@/lib/context/ToastContext";
 import { CourseReviewStats } from "@/components/courses/reviews/CourseReviewStats";
 import { CourseReviewList } from "@/components/courses/reviews/CourseReviewList";
 import { AddCourseReviewForm } from "@/components/courses/reviews/AddCourseReviewForm";
@@ -16,6 +18,7 @@ import { DoctorReviewSection } from "@/components/courses/reviews/DoctorReviewSe
 
 interface Props {
   courseId: string;
+  adminCourseId?: string | null;
   /** الحالة من جدول user_courses */
   courseStatus: string ;
   /** كود المادة */
@@ -33,33 +36,41 @@ function SkeletonBlock({ className }: { className?: string }) {
   );
 }
 
-export function ReviewsTab({ courseId, courseStatus,courseCode,university }: Props) {
+export function ReviewsTab({
+  courseId,
+  adminCourseId,
+  courseStatus,
+  courseCode,
+  university,
+}: Props) {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { Success, Error: showError } = useToast();
 
   const isCompleted = courseStatus === "مكتملة";
   const userId = user?.id ?? null;
 
   // ─── Queries ──────────────────────────────────────────────────────────────
 
-  const { data: stats, isLoading: loadingStats } = useQuery({
-    queryKey: ["course-review-stats", courseId],
-    queryFn: () => getCourseReviewStats(courseId),
-    staleTime: 60_000,
-  });
+const { data: stats, isLoading: loadingStats } = useQuery({
+  queryKey: ["course-review-stats", adminCourseId ?? courseCode, university],
+  queryFn: () => getCourseReviewStats(courseCode, adminCourseId, university),
+  staleTime: 60_000,
+});
 
-  const { data: reviews = [], isLoading: loadingReviews } = useQuery({
-    queryKey: ["course-reviews", courseId],
-    queryFn: () => getCourseReviews(courseId),
-    staleTime: 60_000,
-  });
+const { data: reviews = [], isLoading: loadingReviews } = useQuery({
+  queryKey: ["course-reviews", adminCourseId ?? courseCode, university],
+  queryFn: () => getCourseReviews(courseCode, adminCourseId, university),
+  staleTime: 60_000,
+});
 
-  const { data: userReview, isLoading: loadingUserReview } = useQuery({
-    queryKey: ["user-course-review", courseId],
-    queryFn: () => getUserCourseReview(courseId, userId!),
-    enabled: !!userId && isCompleted,
-    staleTime: 60_000,
-  });
-
+const { data: userReview, isLoading: loadingUserReview } = useQuery({
+  queryKey: ["user-course-review", userId, adminCourseId ?? courseCode, university],
+  queryFn: () =>
+    getUserCourseReview(userId!, courseCode, adminCourseId, university),
+  enabled: Boolean(userId && isCompleted),
+  staleTime: 60_000,
+});
 const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
   queryKey: ["course-doctors", courseCode, university],
   queryFn: () => getDoctorsByCourse(courseCode, university),
@@ -67,11 +78,28 @@ const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
   staleTime: 300_000,
 });
 
+  const reportMutation = useMutation({
+    mutationFn: reportPublishedCourseReview,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: ["course-reviews", adminCourseId ?? courseCode],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["course-review-stats", adminCourseId ?? courseCode],
+      });
+      Success("تم إرسال البلاغ", "أُخفي الرأي وسيظهر للأدمن للمراجعة");
+    },
+    onError: (error) => {
+      showError(
+        "تعذر إرسال البلاغ",
+        error instanceof globalThis.Error ? error.message : undefined,
+      );
+    },
+  });
+
   // ─── Derived ──────────────────────────────────────────────────────────────
 
   const alreadyReviewed = !!userReview;
-  const showAddForm = isCompleted && !alreadyReviewed && !loadingUserReview;
-
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -125,7 +153,7 @@ const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
             </div>
           ) : (
             <AddCourseReviewForm
-              courseId={courseId}
+              adminCourseId={adminCourseId}
               courseCode={courseCode}
               university={university}
             />
@@ -172,7 +200,12 @@ const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
             ))}
           </div>
         ) : (
-          <CourseReviewList reviews={reviews} />
+          <CourseReviewList
+            reviews={reviews}
+            currentUserId={userId}
+            reportingReviewId={reportMutation.variables ?? null}
+            onReport={(reviewId) => reportMutation.mutate(reviewId)}
+          />
         )}
       </section>
 

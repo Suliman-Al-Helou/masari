@@ -7,6 +7,7 @@ import { ToastProvider } from "@/lib/context/ToastContext";
 import AuthGuard from "@/components/auth/AuthGuard";
 import QueryProvider from "@/components/providers/QueryProvider";
 import { ThemeProvider } from "@/lib/context/ThemeContext";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 const tajawal = Tajawal({
   subsets: ["arabic"],
   weight: ["300", "400", "500", "700", "800", "900"],
@@ -30,9 +31,11 @@ export default function RootLayout({
           <AuthProvider>
             <ToastProvider>
               <QueryProvider>
-                <AuthGuard>
-                  <AppLayout>{children}</AppLayout>
-                </AuthGuard>
+                <NuqsAdapter>
+                  <AuthGuard>
+                    <AppLayout>{children}</AppLayout>
+                  </AuthGuard>
+                </NuqsAdapter>
               </QueryProvider>
             </ToastProvider>
           </AuthProvider>

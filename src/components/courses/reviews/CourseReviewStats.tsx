@@ -80,6 +80,7 @@ export function CourseReviewStats({ stats }: Props) {
   }
 
   const roundedRating = Math.round(stats.avg_rating * 10) / 10;
+  const hasReliableAverage = stats.total >= 3;
   const safeStats = stats ?? {
     total: 0,
     avg_rating: 0,
@@ -93,13 +94,21 @@ export function CourseReviewStats({ stats }: Props) {
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Score big */}
         <div className="flex flex-col items-center justify-center gap-2 min-w-[120px]">
-          <span
-            className="text-5xl font-bold text-[var(--color-text-primary)]"
-            style={{ fontVariantNumeric: "tabular-nums" }}
-          >
-            {roundedRating.toFixed(1)}
-          </span>
-          <Stars value={stats.avg_rating} />
+          {hasReliableAverage ? (
+            <>
+              <span
+                className="text-5xl font-bold text-[var(--color-text-primary)]"
+                style={{ fontVariantNumeric: "tabular-nums" }}
+              >
+                {roundedRating.toFixed(1)}
+              </span>
+              <Stars value={stats.avg_rating} />
+            </>
+          ) : (
+            <span className="max-w-32 text-center text-sm font-medium text-[var(--color-text-primary)]">
+              يظهر المتوسط بعد 3 تقييمات
+            </span>
+          )}
           <span className="text-xs text-[var(--color-text-secondary)]">
             {stats.total} {stats.total === 1 ? "تقييم" : "تقييمات"}
           </span>
@@ -140,7 +149,13 @@ export function CourseReviewStats({ stats }: Props) {
         </div>
 
         {/* Workload + Difficulty */}
-        <div className="flex flex-col justify-center gap-4 min-w-[160px]">
+        <div className="flex min-w-[160px] flex-col justify-center gap-4">
+          {!hasReliableAverage ? (
+            <p className="text-center text-xs text-[var(--color-text-secondary)]">
+              بيانات الصعوبة وعبء العمل بانتظار تقييمات إضافية.
+            </p>
+          ) : (
+            <>
           <div>
             <div className="flex justify-between mb-1">
               <span className="text-xs font-medium text-[var(--color-text-primary)]">
@@ -163,6 +178,8 @@ export function CourseReviewStats({ stats }: Props) {
             </div>
             <StarBar value={stats.avg_difficulty} />
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>

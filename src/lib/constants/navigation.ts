@@ -1,6 +1,7 @@
 import {
   BookOpen,
   Calendar,
+  ClipboardList,
   GraduationCap,
   HeadphonesIcon,
   Home,
@@ -32,6 +33,12 @@ export const STUDENT_NAV_GROUPS = [
         label: "مخطط الفصل",
         href: "/semester-plan",
         icon: Calendar,
+        match: "prefix",
+      },
+      {
+        label: "Google Classroom",
+        href: "/classroom",
+        icon: ClipboardList,
         match: "prefix",
       },
       {
@@ -90,12 +97,10 @@ export const ADMIN_NAV_GROUPS = [
       },
     ],
   },
- 
-  
 ] satisfies readonly NavigationGroup[];
 
-// مؤقتًا حتى نعدّل Sidebar الطالب في الخطوة التالية
 export const NAV_GROUPS = STUDENT_NAV_GROUPS;
+
 export const FEATURES = [
   {
     label: "دليل المسار",
@@ -108,6 +113,12 @@ export const FEATURES = [
     icon: Calendar,
     path: "/semester-plan",
     color: "bg-info/10 text-info",
+  },
+  {
+    label: "Google Classroom",
+    icon: ClipboardList,
+    path: "/classroom",
+    color: "bg-primary/10 text-primary",
   },
   {
     label: "شبكة الطلاب",

@@ -6,9 +6,9 @@ export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+  const auth = await requirePermission(PERMISSION.REVIEWS_MODERATE);
   if (!auth.ok) return auth.response;
-  const { id } = await params
+  const { id } = await params;
   try {
     await adminDeleteDoctorReview(id);
     return Response.json({ success: true });

@@ -18,6 +18,7 @@ interface Profile {
   show_in_network: boolean;
   degree_type: string | null;
   role: "student" | "admin";
+  is_super_admin: boolean;
   deleted_at: string | null;
 }
 

@@ -1,23 +1,87 @@
+import {
+  AdminCourseServiceError,
+  moderateManagedCourseReview,
+  permanentlyDeleteManagedCourseReview,
+} from "@/lib/api/admin-course.service";
 import { PERMISSION } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-permission";
-import { adminDeleteCourseReview } from "@/lib/api/admin.service";
 import { logger } from "@/lib/logger";
+import {
+  courseIdSchema,
+  moderateCourseReviewSchema,
+} from "@/schemas/admin-course.schema";
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+function handleError(error: unknown) {
+  if (error instanceof AdminCourseServiceError) {
+    return Response.json(
+      { success: false, error: error.message },
+      { status: error.status },
+    );
+  }
+  logger.error(error, "Error moderating course review");
+  return Response.json(
+    { success: false, error: "تعذر تحديث التقييم" },
+    { status: 500 },
+  );
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const auth = await requirePermission(PERMISSION.REVIEWS_MODERATE);
   if (!auth.ok) return auth.response;
-  const { id } = await params
+
+  const { id: rawId } = await context.params;
+  const id = courseIdSchema.safeParse(rawId);
+  const body = moderateCourseReviewSchema.safeParse(
+    await request.json().catch(() => null),
+  );
+
+  if (!id.success || !body.success) {
+    return Response.json(
+      { success: false, error: "بيانات التقييم غير صالحة" },
+      { status: 400 },
+    );
+  }
+
   try {
-    await adminDeleteCourseReview(id);
+    await moderateManagedCourseReview(
+      id.data,
+      body.data.status,
+      auth.session.userId,
+    );
     return Response.json({ success: true });
   } catch (error) {
-    logger.error(error, "Error deleting course review");
+    return handleError(error);
+  }
+}
+
+export async function DELETE(_request: Request, context: RouteContext) {
+  const auth = await requirePermission(PERMISSION.REVIEWS_MODERATE);
+  if (!auth.ok) return auth.response;
+
+  if (!auth.session.isSuperAdmin) {
     return Response.json(
-      { success: false, error: "Failed to delete course review" },
-      { status: 500 },
+      { success: false, error: "الحذف النهائي متاح للأدمن الأساسي فقط" },
+      { status: 403 },
     );
+  }
+
+  const { id: rawId } = await context.params;
+  const id = courseIdSchema.safeParse(rawId);
+  if (!id.success) {
+    return Response.json(
+      { success: false, error: "معرف التقييم غير صالح" },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await permanentlyDeleteManagedCourseReview(id.data);
+    return Response.json({ success: true });
+  } catch (error) {
+    return handleError(error);
   }
 }

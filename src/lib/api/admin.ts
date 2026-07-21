@@ -19,6 +19,11 @@ import type {
   AdminDoctorFilters,
   CreateAdminDoctorInput,
   AdminDoctorReviewDetails,
+  AdminCourseDetails,
+  AdminCourseFilters,
+  AdminCoursePage,
+  AdminCourseReviewStatus,
+  UpdateAdminCourseInput,
 } from "@/types/admin";
 import { getPlatformActivityMock } from "@/lib/mocks/platform-activity.mock";
 import {
@@ -132,22 +137,44 @@ export async function getStudentDistribution(
 }
 
 // جلب المواد مع فلاتر اختيارية، تُبنى كـ Query String (?university=...&major=...)
+function adminCourseSearchParams(filters: AdminCourseFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.university) params.set("university", filters.university);
+  if (filters.major) params.set("major", filters.major);
+  if (filters.semester) params.set("semester", filters.semester);
+  if (filters.year) params.set("year", filters.year);
+  if (filters.search) params.set("search", filters.search);
+  if (filters.sort) params.set("sort", filters.sort);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.page) params.set("page", String(filters.page));
+  if (filters.pageSize) params.set("pageSize", String(filters.pageSize));
+  return params;
+}
+
+export async function getAdminCoursesPage(
+  filters: AdminCourseFilters = {},
+): Promise<AdminCoursePage> {
+  const params = adminCourseSearchParams(filters);
+  const query = params.toString();
+
+  return api.get<AdminCoursePage>(
+    `${API_ENDPOINTS.admin.courses}${query ? `?${query}` : ""}`,
+  );
+}
+
 export async function getAdminCourses(options?: {
   university?: string;
   major?: string;
-  year?: string;
-  semester?: string;
   search?: string;
 }): Promise<AdminCourse[]> {
-  const params = new URLSearchParams();
-  if (options?.university) params.set("university", options.university);
-  if (options?.major) params.set("major", options.major);
-  if (options?.year) params.set("year", options.year);
-  if (options?.semester) params.set("semester", options.semester);
-  if (options?.search) params.set("search", options.search);
+  const page = await getAdminCoursesPage({
+    ...options,
+    page: 1,
+    pageSize: 100,
+    sort: "name_asc",
+  });
 
-  const query = params.toString() ? `?${params.toString()}` : "";
-  return api.get<AdminCourse[]>(API_ENDPOINTS.admin.courses + query);
+  return page.items;
 }
 
 // إنشاء مادة جديدة (CreateAdminCourseInput = AdminCourse بدون id و created_at)
@@ -155,6 +182,17 @@ export async function createAdminCourse(
   course: CreateAdminCourseInput,
 ): Promise<AdminCourse> {
   return api.post<AdminCourse>(API_ENDPOINTS.admin.courses, course);
+}
+
+export async function getAdminCourse(id: string): Promise<AdminCourse> {
+  return api.get<AdminCourse>(API_ENDPOINTS.admin.adminCourse(id));
+}
+
+export async function updateAdminCourse(
+  id: string,
+  input: UpdateAdminCourseInput,
+): Promise<AdminCourse> {
+  return api.patch<AdminCourse>(API_ENDPOINTS.admin.adminCourse(id), input);
 }
 
 export async function updateAdminDoctorCourses(
@@ -168,6 +206,35 @@ export async function updateAdminDoctorCourses(
 // حذف مادة حسب id
 export async function deleteAdminCourse(id: string): Promise<void> {
   return api.delete(API_ENDPOINTS.admin.adminCourse(id));
+}
+
+export async function restoreAdminCourse(id: string): Promise<AdminCourse> {
+  return api.patch<AdminCourse>(API_ENDPOINTS.admin.restoreCourse(id), {});
+}
+
+export async function getAdminCourseReviewDetails(
+  courseId: string,
+  options: { sort?: "newest" | "highest"; status?: string } = {},
+): Promise<AdminCourseDetails> {
+  const params = new URLSearchParams();
+  if (options.sort) params.set("sort", options.sort);
+  if (options.status) params.set("status", options.status);
+  const query = params.toString();
+
+  return api.get<AdminCourseDetails>(
+    `${API_ENDPOINTS.admin.courseReviewDetails(courseId)}${
+      query ? `?${query}` : ""
+    }`,
+  );
+}
+
+export async function moderateAdminCourseReview(
+  reviewId: string,
+  status: AdminCourseReviewStatus,
+): Promise<void> {
+  return api.patch<void>(API_ENDPOINTS.admin.adminCourseReview(reviewId), {
+    status,
+  });
 }
 
 // =============================================

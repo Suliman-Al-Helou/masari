@@ -13,6 +13,19 @@ const envSchema = z.object({
     .string()
     .min(1, "SUPABASE_SERVICE_ROLE_KEY مطلوب"),
 
+  // Google Classroom server credentials.
+  GOOGLE_CLASSROOM_CLIENT_ID: z.string().min(1),
+  GOOGLE_CLASSROOM_CLIENT_SECRET: z.string().min(1),
+  GOOGLE_CLASSROOM_REDIRECT_URI: z.string().url(),
+  GOOGLE_TOKEN_ENCRYPTION_KEY: z
+    .string()
+    .regex(
+      /^[a-fA-F0-9]{64}$/,
+      "GOOGLE_TOKEN_ENCRYPTION_KEY يجب أن يكون 64 خانة",
+    ),
+
+
+    
   NODE_ENV: z
     .enum(["development", "production", "test"])
     .default("development"),

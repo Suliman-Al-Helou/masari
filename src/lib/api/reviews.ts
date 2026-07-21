@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/db/client";
+import { api } from "@/lib/api/fetcher";
 
 // ══════════════════════════════════════════════
 // Types
@@ -20,15 +21,18 @@ export type Doctor = {
 export type CourseReview = {
   id: string;
   user_id: string;
+  admin_course_id: string | null;
   course_code: string;
   university: string;
   rating_overall: number;
   rating_difficulty: number;
   rating_workload: number;
+  content_quality: number | null;
   would_retake: boolean;
   review: string | null;
   tips: string | null;
   semester_taken: string | null;
+  status: "published" | "hidden" | "rejected";
   created_at: string;
   // join
   profiles?: { full_name: string; avatar_url?: string | null } | null;
@@ -114,12 +118,23 @@ export async function getDoctorsByCourse(
 
 export async function getCourseReviews(
   courseCode: string,
+  adminCourseId?: string | null,
+  university?: string,
 ): Promise<CourseReview[]> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("course_reviews")
     .select("*, profiles(full_name)")
-    .eq("course_code", courseCode)
-    .order("created_at", { ascending: false });
+    .eq("status", "published");
+
+  query = adminCourseId
+    ? query.eq("admin_course_id", adminCourseId)
+    : query.eq("course_code", courseCode);
+
+  if (!adminCourseId && university) query = query.eq("university", university);
+
+  const { data, error } = await query.order("created_at", {
+    ascending: false,
+  });
 
   if (error) throw error;
   return (data ?? []) as CourseReview[];
@@ -127,11 +142,21 @@ export async function getCourseReviews(
 
 export async function getCourseReviewStats(
   courseCode: string,
+  adminCourseId?: string | null,
+  university?: string,
 ): Promise<CourseReviewStats> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("course_reviews")
     .select("rating_overall, rating_difficulty, rating_workload, would_retake")
-    .eq("course_code", courseCode);
+    .eq("status", "published");
+
+  query = adminCourseId
+    ? query.eq("admin_course_id", adminCourseId)
+    : query.eq("course_code", courseCode);
+
+  if (!adminCourseId && university) query = query.eq("university", university);
+
+  const { data, error } = await query;
 
   if (error) throw error;
   const rows = data ?? [];
@@ -176,11 +201,13 @@ export async function getCourseReviewStats(
 
 export async function addCourseReview(review: {
   user_id: string;
+  admin_course_id?: string | null;
   course_code: string;
   university: string;
   rating_overall: number;
   rating_difficulty: number;
   rating_workload: number;
+  content_quality: number;
   would_retake: boolean;
   review?: string;
   tips?: string;
@@ -200,17 +227,29 @@ export async function deleteCourseReview(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function reportPublishedCourseReview(id: string): Promise<void> {
+  await api.post(`/api/course-reviews/${id}/report`, {});
+}
+
 // هل قيّم الطالب هذه المادة مسبقاً؟
 export async function getUserCourseReview(
   userId: string,
   courseCode: string,
+  adminCourseId?: string | null,
+  university?: string,
 ): Promise<CourseReview | null> {
-  const { data } = await supabase
+  let query = supabase
     .from("course_reviews")
     .select("*")
-    .eq("user_id", userId)
-    .eq("course_code", courseCode)
-    .maybeSingle();
+    .eq("user_id", userId);
+
+  query = adminCourseId
+    ? query.eq("admin_course_id", adminCourseId)
+    : query.eq("course_code", courseCode);
+
+  if (!adminCourseId && university) query = query.eq("university", university);
+
+  const { data } = await query.maybeSingle();
   return data as CourseReview | null;
 }
 

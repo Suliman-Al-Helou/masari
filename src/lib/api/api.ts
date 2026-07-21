@@ -15,14 +15,17 @@ export async function getCourses(userId: string) {
 
 export async function addCourse(course: {
   user_id: string;
+  admin_course_id?: string | null;
   name: string;
   code: string;
   credits: number;
   category: string;
   status: string;
 
-   semester?: string;
+  semester?: string;
   year?: string;
+  university?: string;
+  major?: string;
 }) {
   const { data, error } = await supabase
     .from('courses')

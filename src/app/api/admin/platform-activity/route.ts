@@ -8,7 +8,7 @@ import { platformActivityFiltersSchema } from "@/schemas/admin-dashboard.schema"
 
 // Returns the platform activity trend to authorized admins
 export async function GET(request: Request) {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+  const auth = await requirePermission(PERMISSION.DASHBOARD_VIEW);
 
   if (!auth.ok) return auth.response;
 

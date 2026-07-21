@@ -1,13 +1,11 @@
-import {
-  UserManagementError,
-} from "@/lib/api/user-management.service";
+import { UserManagementError } from "@/lib/api/user-management.service";
 import { updateManagedUserDeletionNote } from "@/lib/api/user-management.service";
 import { PERMISSION } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-super-admin";
 import { logger } from "@/lib/logger";
 
 interface RouteContext {
-  params: Promise<{ id: string }>;  
+  params: Promise<{ id: string }>;
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -25,7 +23,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   try {
-    await updateManagedUserDeletionNote(auth.session.userId,id, body.note);
+    await updateManagedUserDeletionNote(auth.session.userId, id, body.note);
     return Response.json({ success: true });
   } catch (error) {
     if (error instanceof UserManagementError) {

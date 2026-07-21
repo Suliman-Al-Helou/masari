@@ -1,4 +1,5 @@
 import { dbAdmin } from "@/lib/db/server-only";
+import "server-only";
 import type {
   MajorDistribution,
   UniversityDistribution,
@@ -383,14 +384,11 @@ export class AdminDoctorCoursesError extends Error {
 }
 
 export async function updateAdminDoctorCourses(
-  actorUserId:string,
+  actorUserId: string,
   doctorId: string,
   courseIds: string[],
 ): Promise<void> {
-await requireAdminActor(
-  actorUserId,
-  PERMISSION.DOCTORS_MANAGE,
-);
+  await requireAdminActor(actorUserId, PERMISSION.DOCTORS_MANAGE);
   const { error } = await dbAdmin.rpc("replace_doctor_courses", {
     p_doctor_id: doctorId,
     p_course_ids: courseIds,
@@ -443,14 +441,34 @@ export async function adminGetAllCourseReviews(): Promise<AdminCourseReview[]> {
     .from("course_reviews")
     .select(
       `
-      id, rating_overall, rating_difficulty, rating_workload, would_retake, comment, created_at,
-      profiles (full_name, university),
-      courses (name, code)
-    `,
+id,
+admin_course_id,
+course_code,
+university,
+rating_overall,
+rating_difficulty,
+rating_workload,
+content_quality,
+status,
+would_retake,
+review,
+created_at,
+profiles (full_name, university),
+admin_courses (name, code)
+`,
     )
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []) as unknown as AdminCourseReview[];
+  return (data ?? []).map((row) => {
+    const course = Array.isArray(row.admin_courses)
+      ? (row.admin_courses[0] ?? null)
+      : row.admin_courses;
+
+    return {
+      ...row,
+      courses: course,
+    } as unknown as AdminCourseReview;
+  });
 }
 
 // حذف مراجعة مادة حسب id
@@ -493,9 +511,7 @@ type AdminDoctorReviewRow = {
     | null;
 };
 
-function getReviewProfile(
-  relation: AdminDoctorReviewRow["profiles"],
-): {
+function getReviewProfile(relation: AdminDoctorReviewRow["profiles"]): {
   full_name: string;
   university: string | null;
 } | null {
@@ -621,9 +637,7 @@ export async function getAdminDoctorReviewDetails(
     };
   });
 
-  const retakeCount = reviews.filter(
-    (review) => review.would_retake,
-  ).length;
+  const retakeCount = reviews.filter((review) => review.would_retake).length;
 
   return {
     doctor,
@@ -649,11 +663,18 @@ export async function adminGetAllDoctorReviews(): Promise<AdminDoctorReview[]> {
     .from("doctor_reviews")
     .select(
       `
-      id, rating, comment, created_at,
-      profiles (full_name, university),
-      doctors (name, title),
-      courses (name, code)
-    `,
+id,
+course_code,
+rating_overall,
+rating_clarity,
+rating_fairness,
+would_retake,
+review,
+created_at,
+profiles (full_name, university),
+doctors (name, title),
+courses (name, code)
+`,
     )
     .order("created_at", { ascending: false });
   if (error) throw error;

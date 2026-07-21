@@ -133,6 +133,7 @@ useEffect(() => {
         }`}
       >
         <TopBar
+          onMenuToggle={toggle}
           user={{
             full_name:
               profile?.full_name ??

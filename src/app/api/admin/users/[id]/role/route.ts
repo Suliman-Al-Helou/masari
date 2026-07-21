@@ -1,6 +1,4 @@
-import {
-  UserManagementError
-} from "@/lib/api/user-management.service";
+import { UserManagementError } from "@/lib/api/user-management.service";
 import { updateManagedUserRole } from "@/lib/api/user-management.service";
 import { PERMISSION } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-super-admin";

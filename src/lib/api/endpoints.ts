@@ -19,6 +19,8 @@ export const API_ENDPOINTS = {
     // إدارة المواد
     courses: "/api/admin/courses", // GET: جلب المواد (بفلاتر اختيارية) / POST: إنشاء مادة
     adminCourse: (id: string) => `/api/admin/courses/${id}`, // DELETE: حذف مادة محددة
+    restoreCourse: (id: string) => `/api/admin/courses/${id}/restore`,
+    courseReviewDetails: (id: string) => `/api/admin/courses/${id}/reviews`,
     // إدارة الدكاترة
     doctors: "/api/admin/doctors",
     adminDoctor: (id: string) => `/api/admin/doctors/${id}`,

@@ -10,9 +10,11 @@ import {
   adminGetAllDoctorReviews,
   adminDeleteCourseReview,
   adminDeleteDoctorReview,
+  moderateAdminCourseReview,
 } from "@/lib/api/admin";
 import { useToast } from "@/lib/context/ToastContext";
-import { success } from "zod";
+import { useAuth } from "@/lib/hooks/useAuth";
+import type { AdminCourseReviewStatus } from "@/types/admin";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -194,10 +196,13 @@ function FiltersBar({
 
 function CourseReviewsTab() {
   const { Success, Error } = useToast();
+  const { profile } = useAuth();
+  const isSuperAdmin = Boolean(profile?.is_super_admin);
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [university, setUniversity] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [moderatingId, setModeratingId] = useState<string | null>(null);
 
   const { data: reviews = [], isLoading } = useQuery({
     queryKey: ["admin-course-reviews"],
@@ -216,6 +221,23 @@ function CourseReviewsTab() {
     onSettled: () => setDeletingId(null),
   });
 
+  const moderationMutation = useMutation({
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: AdminCourseReviewStatus;
+    }) => moderateAdminCourseReview(id, status),
+    onMutate: ({ id }) => setModeratingId(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-course-reviews"] });
+      Success("تم تحديث حالة التقييم");
+    },
+    onError: () => Error("تعذر تحديث حالة التقييم"),
+    onSettled: () => setModeratingId(null),
+  });
+
   const universities = useMemo(() => {
     const set = new Set(
       reviews.map((r) => r.profiles?.university).filter(Boolean) as string[],
@@ -231,7 +253,7 @@ function CourseReviewsTab() {
         r.profiles?.full_name?.toLowerCase().includes(q) ||
         r.courses?.name?.toLowerCase().includes(q) ||
         (r.courses?.code?.toLowerCase().includes(q) ?? false) ||
-        (r.comment?.toLowerCase().includes(q) ?? false);
+        (r.review?.toLowerCase().includes(q) ?? false);
       const matchUni = !university || r.profiles?.university === university;
       return matchSearch && matchUni;
     });
@@ -269,6 +291,9 @@ function CourseReviewsTab() {
                 <th className="px-4 py-3 text-right font-semibold text-[var(--color-text-secondary)] text-xs hidden sm:table-cell">
                   التاريخ
                 </th>
+                <th className="px-4 py-3 text-right font-semibold text-[var(--color-text-secondary)] text-xs">
+                  الحالة
+                </th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -278,7 +303,7 @@ function CourseReviewsTab() {
               ) : filtered.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-4 py-12 text-center text-[var(--color-text-secondary)] text-sm"
                   >
                     لا توجد نتائج
@@ -317,19 +342,19 @@ function CourseReviewsTab() {
                     {/* التقييم */}
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
-                        <Stars value={review.rating} />
+                        <Stars value={review.rating_overall} />
                         <div className="flex gap-2 text-xs text-[var(--color-text-secondary)]">
-                          <span title="عبء العمل">⚡{review.workload}/5</span>
-                          <span title="الصعوبة">🎯{review.difficulty}/5</span>
+                          <span title="عبء العمل">⚡{review.rating_workload}/5</span>
+                          <span title="الصعوبة">🎯{review.rating_difficulty}/5</span>
                         </div>
                       </div>
                     </td>
 
                     {/* التعليق */}
                     <td className="px-4 py-3 hidden md:table-cell max-w-[200px]">
-                      {review.comment ? (
+                      {review.review ? (
                         <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-                          {review.comment}
+                          {review.review}
                         </p>
                       ) : (
                         <span className="text-xs text-[var(--color-border)]">
@@ -348,12 +373,71 @@ function CourseReviewsTab() {
                       </span>
                     </td>
 
-                    {/* حذف */}
+                    <td className="px-4 py-3">
+                      <span className="whitespace-nowrap rounded-lg bg-muted px-2 py-1 text-xs text-muted-foreground">
+                        {review.status === "published"
+                          ? "منشور"
+                          : review.status === "hidden"
+                            ? "مخفي"
+                            : "مرفوض"}
+                      </span>
+                    </td>
+
+                    {/* إدارة الحالة والحذف النهائي */}
                     <td className="px-3 py-3">
-                      <DeleteButton
-                        onConfirm={() => mutation.mutate(review.id)}
-                        loading={deletingId === review.id}
-                      />
+                      <div className="flex items-center gap-1">
+                        {review.status !== "published" && (
+                          <button
+                            type="button"
+                            disabled={moderatingId === review.id}
+                            onClick={() =>
+                              moderationMutation.mutate({
+                                id: review.id,
+                                status: "published",
+                              })
+                            }
+                            className="rounded-lg px-2 py-1 text-xs text-emerald-600 hover:bg-emerald-500/10 disabled:opacity-50"
+                          >
+                            نشر
+                          </button>
+                        )}
+                        {review.status !== "hidden" && (
+                          <button
+                            type="button"
+                            disabled={moderatingId === review.id}
+                            onClick={() =>
+                              moderationMutation.mutate({
+                                id: review.id,
+                                status: "hidden",
+                              })
+                            }
+                            className="rounded-lg px-2 py-1 text-xs text-amber-600 hover:bg-amber-500/10 disabled:opacity-50"
+                          >
+                            إخفاء
+                          </button>
+                        )}
+                        {review.status !== "rejected" && (
+                          <button
+                            type="button"
+                            disabled={moderatingId === review.id}
+                            onClick={() =>
+                              moderationMutation.mutate({
+                                id: review.id,
+                                status: "rejected",
+                              })
+                            }
+                            className="rounded-lg px-2 py-1 text-xs text-destructive hover:bg-destructive/10 disabled:opacity-50"
+                          >
+                            رفض
+                          </button>
+                        )}
+                        {isSuperAdmin && (
+                          <DeleteButton
+                            onConfirm={() => mutation.mutate(review.id)}
+                            loading={deletingId === review.id}
+                          />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -407,7 +491,7 @@ function DoctorReviewsTab() {
         r.profiles?.full_name?.toLowerCase().includes(q) ||
         r.doctors?.name?.toLowerCase().includes(q) ||
         r.courses?.name?.toLowerCase().includes(q) ||
-        (r.comment?.toLowerCase().includes(q) ?? false);
+        (r.review?.toLowerCase().includes(q) ?? false);
       const matchUni = !university || r.profiles?.university === university;
       return matchSearch && matchUni;
     });
@@ -507,17 +591,17 @@ function DoctorReviewsTab() {
 
                     {/* التقييم */}
                     <td className="px-4 py-3">
-                      <Stars value={review.rating} />
+                      <Stars value={review.rating_overall} />
                       <span className="text-xs text-[var(--color-text-secondary)] mt-0.5 block tabular-nums">
-                        {review.rating}/5
+                        {review.rating_overall}/5
                       </span>
                     </td>
 
                     {/* التعليق */}
                     <td className="px-4 py-3 hidden md:table-cell max-w-[200px]">
-                      {review.comment ? (
+                      {review.review ? (
                         <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2 leading-relaxed">
-                          {review.comment}
+                          {review.review}
                         </p>
                       ) : (
                         <span className="text-xs text-[var(--color-border)]">
@@ -569,7 +653,7 @@ export default function AdminReviewsPage() {
           إشراف التقييمات
         </h1>
         <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-          مراجعة وحذف تقييمات المواد والدكاترة
+          نشر وإخفاء ورفض التقييمات، مع حذف نهائي للأدمن الأساسي
         </p>
       </div>
 

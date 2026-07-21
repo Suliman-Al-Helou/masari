@@ -1,6 +1,4 @@
-import {
-  UserManagementError,
-} from "@/lib/api/user-management.service";
+import { UserManagementError } from "@/lib/api/user-management.service";
 import { restoreManagedUser } from "@/lib/api/user-management.service";
 import { PERMISSION } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/require-super-admin";
@@ -17,7 +15,7 @@ export async function PATCH(_request: Request, context: RouteContext) {
   const { id } = await context.params;
 
   try {
-    await restoreManagedUser(auth.session.userId,id);
+    await restoreManagedUser(auth.session.userId, id);
     return Response.json({ success: true });
   } catch (error) {
     if (error instanceof UserManagementError) {

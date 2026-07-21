@@ -139,6 +139,7 @@ export default function CourseDetailPage() {
       {activeTab === 'reviews' && (
         <ReviewsTab
           courseId={course.id}
+          adminCourseId={course.admin_course_id}
           courseStatus={course.status}
           courseCode={course.code}
           university={course.university ?? ""}

@@ -4,7 +4,7 @@ import { getAdminStats } from "@/lib/api/admin.service";
 import { logger } from "@/lib/logger";
 
 export async function GET() {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+  const auth = await requirePermission(PERMISSION.DASHBOARD_VIEW);
 
   if (!auth.ok) return auth.response;
 

@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { getMockStudentDistribution } from "@/lib/mocks/student-distribution.mock";
 
 export async function GET(request: Request) {
-  const auth = await requirePermission(PERMISSION.USERS_MANAGE);
+  const auth = await requirePermission(PERMISSION.DASHBOARD_VIEW);
 
   if (!auth.ok) return auth.response;
 

@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addCourseReview } from "@/lib/api/reviews";
 import { useToast } from "@/lib/context/ToastContext";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { SatisfactionFace } from "@/components/courses/reviews/SatisfactionFace";
 
 // ── Props ──
 interface Props {
-  courseId:   string;
+  adminCourseId?: string | null;
   courseCode: string;
   university: string;
   onSuccess?: () => void;
@@ -19,24 +20,37 @@ interface Props {
 
 // ── Schema ──
 const schema = z.object({
-  rating:       z.number().min(1, "يجب اختيار تقييم").max(5),
-  workload:     z.number().min(1, "يجب تحديد عبء العمل").max(5),
-  difficulty:   z.number().min(1, "يجب تحديد مستوى الصعوبة").max(5),
-  would_retake: z.boolean(),          // ← احذف .default(false)
-  comment:      z.string().max(500, "الحد الأقصى 500 حرف").optional(),
+  rating: z.number().min(1, "يجب اختيار تقييم").max(5),
+  workload: z.number().min(1, "يجب تحديد عبء العمل").max(5),
+  difficulty: z.number().min(1, "يجب تحديد مستوى الصعوبة").max(5),
+  content_quality: z.number().min(1, "يجب تقييم جودة المحتوى").max(5),
+  would_retake: z.boolean(), // ← احذف .default(false)
+  comment: z.string().max(500, "الحد الأقصى 500 حرف").optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 // ── Labels ──
 const RATING_LABELS: Record<number, string> = {
-  1: "سيء جداً", 2: "سيء", 3: "مقبول", 4: "جيد", 5: "ممتاز",
+  1: "ضعيف",
+  2: "دون المتوقع",
+  3: "مقبول",
+  4: "جيد",
+  5: "ممتاز",
 };
 const WORKLOAD_LABELS: Record<number, string> = {
-  1: "خفيف جداً", 2: "خفيف", 3: "معتدل", 4: "ثقيل", 5: "ثقيل جداً",
+  1: "خفيف جداً",
+  2: "خفيف",
+  3: "معتدل",
+  4: "ثقيل",
+  5: "ثقيل جداً",
 };
 const DIFFICULTY_LABELS: Record<number, string> = {
-  1: "سهل جداً", 2: "سهل", 3: "متوسط", 4: "صعب", 5: "صعب جداً",
+  1: "سهل جداً",
+  2: "سهل",
+  3: "متوسط",
+  4: "صعب",
+  5: "صعب جداً",
 };
 
 // ── StarPicker ──
@@ -45,9 +59,9 @@ function StarPicker({
   onChange,
   labels,
 }: {
-  value:    number;
+  value: number;
   onChange: (v: number) => void;
-  labels:   Record<number, string>;
+  labels: Record<number, string>;
 }) {
   const [hovered, setHovered] = useState(0);
 
@@ -66,8 +80,16 @@ function StarPicker({
             <svg
               className="w-7 h-7 transition-colors"
               viewBox="0 0 20 20"
-              fill={i <= (hovered || value) ? "var(--color-warning, #f59e0b)" : "none"}
-              stroke={i <= (hovered || value) ? "var(--color-warning, #f59e0b)" : "var(--color-border)"}
+              fill={
+                i <= (hovered || value)
+                  ? "var(--color-warning, #f59e0b)"
+                  : "none"
+              }
+              stroke={
+                i <= (hovered || value)
+                  ? "var(--color-warning, #f59e0b)"
+                  : "var(--color-border)"
+              }
               strokeWidth={1.5}
             >
               <path
@@ -88,10 +110,15 @@ function StarPicker({
 }
 
 // ── Main Component ──
-export function AddCourseReviewForm({ courseId, courseCode, university, onSuccess }: Props) {
-  const { user }      = useAuth();
+export function AddCourseReviewForm({
+  adminCourseId,
+  courseCode,
+  university,
+  onSuccess,
+}: Props) {
+  const { user } = useAuth();
   const { Success, Error } = useToast();
-  const queryClient   = useQueryClient();
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
   const {
@@ -99,37 +126,51 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      rating:       0,
-      workload:     0,
-      difficulty:   0,
+      rating: 0,
+      workload: 0,
+      difficulty: 0,
+      content_quality: 0,
       would_retake: false,
-      comment:      "",
+      comment: "",
     },
   });
 
-  const { comment: commentValue = "" } = watch();
+  const commentValue = useWatch({ control, name: "comment" }) ?? "";
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>
       addCourseReview({
-        user_id:           user!.id,
-        course_code:       courseCode,
-        university:        university,
-        rating_overall:    values.rating,
+        user_id: user!.id,
+        admin_course_id: adminCourseId ?? null,
+        course_code: courseCode,
+        university: university,
+        rating_overall: values.rating,
         rating_difficulty: values.difficulty,
-        rating_workload:   values.workload,
-        would_retake:      values.would_retake,
-        review:            values.comment,
+        rating_workload: values.workload,
+        content_quality: values.content_quality,
+        would_retake: values.would_retake,
+        review: values.comment,
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["course-reviews",      courseId] });
-      queryClient.invalidateQueries({ queryKey: ["course-review-stats", courseId] });
-      queryClient.invalidateQueries({ queryKey: ["user-course-review",  courseId] });
+      queryClient.invalidateQueries({
+        queryKey: ["course-reviews", adminCourseId ?? courseCode],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: ["course-review-stats", adminCourseId ?? courseCode],
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: [
+          "user-course-review",
+          user!.id,
+          adminCourseId ?? courseCode,
+        ],
+      });
       Success("تم إضافة تقييمك بنجاح ✨");
       reset();
       setOpen(false);
@@ -148,8 +189,18 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
           onClick={() => setOpen(true)}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--color-primary)] text-white text-sm font-semibold hover:opacity-90 transition-opacity"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4v16m8-8H4"
+            />
           </svg>
           أضف تقييمك
         </button>
@@ -164,8 +215,10 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
         أضف تقييمك للمادة
       </h3>
 
-      <form onSubmit={handleSubmit((v) => mutation.mutate(v))} className="flex flex-col gap-5">
-
+      <form
+        onSubmit={handleSubmit((v) => mutation.mutate(v))}
+        className="flex flex-col gap-5"
+      >
         {/* التقييم العام */}
         <div>
           <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
@@ -175,7 +228,11 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
             control={control}
             name="rating"
             render={({ field }) => (
-              <StarPicker value={field.value} onChange={field.onChange} labels={RATING_LABELS} />
+              <StarPicker
+                value={field.value}
+                onChange={field.onChange}
+                labels={RATING_LABELS}
+              />
             )}
           />
           {errors.rating && (
@@ -193,11 +250,17 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
               control={control}
               name="workload"
               render={({ field }) => (
-                <StarPicker value={field.value} onChange={field.onChange} labels={WORKLOAD_LABELS} />
+                <StarPicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  labels={WORKLOAD_LABELS}
+                />
               )}
             />
             {errors.workload && (
-              <p className="text-xs text-red-500 mt-1">{errors.workload.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {errors.workload.message}
+              </p>
             )}
           </div>
 
@@ -210,13 +273,58 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
               control={control}
               name="difficulty"
               render={({ field }) => (
-                <StarPicker value={field.value} onChange={field.onChange} labels={DIFFICULTY_LABELS} />
+                <StarPicker
+                  value={field.value}
+                  onChange={field.onChange}
+                  labels={DIFFICULTY_LABELS}
+                />
               )}
             />
             {errors.difficulty && (
-              <p className="text-xs text-red-500 mt-1">{errors.difficulty.message}</p>
+              <p className="text-xs text-red-500 mt-1">
+                {errors.difficulty.message}
+              </p>
             )}
           </div>
+        </div>
+
+        {/* جودة المحتوى */}
+        <div>
+          <label className="block text-sm font-medium text-[var(--color-text-primary)] mb-3">
+            جودة المحتوى <span className="text-red-500">*</span>
+          </label>
+          <Controller
+            control={control}
+            name="content_quality"
+            render={({ field }) => (
+              <div className="grid grid-cols-5 gap-2" role="radiogroup" aria-label="جودة المحتوى">
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={field.value === value}
+                    onClick={() => field.onChange(value)}
+                    className={`flex min-w-0 flex-col items-center gap-1.5 rounded-xl border p-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-primary)] ${
+                      field.value === value
+                        ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10"
+                        : "border-[var(--color-border)] hover:bg-[var(--color-bg)]"
+                    }`}
+                  >
+                    <SatisfactionFace value={value} className="h-8 w-8" />
+                    <span className="text-[10px] text-[var(--color-text-secondary)] sm:text-xs">
+                      {RATING_LABELS[value]}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          />
+          {errors.content_quality && (
+            <p className="mt-1 text-xs text-red-500">
+              {errors.content_quality.message}
+            </p>
+          )}
         </div>
 
         {/* هل ستأخذها مجدداً؟ */}
@@ -227,7 +335,10 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
             {...register("would_retake")}
             className="w-4 h-4 rounded accent-[var(--color-primary)]"
           />
-          <label htmlFor="would_retake" className="text-sm text-[var(--color-text-primary)]">
+          <label
+            htmlFor="would_retake"
+            className="text-sm text-[var(--color-text-primary)]"
+          >
             سأختار هذه المادة مجدداً
           </label>
         </div>
@@ -260,7 +371,10 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
         <div className="flex gap-3 justify-end">
           <button
             type="button"
-            onClick={() => { reset(); setOpen(false); }}
+            onClick={() => {
+              reset();
+              setOpen(false);
+            }}
             className="px-4 py-2 rounded-xl text-sm font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-border)] hover:bg-opacity-40 transition"
           >
             إلغاء
@@ -273,7 +387,6 @@ export function AddCourseReviewForm({ courseId, courseCode, university, onSucces
             {mutation.isPending ? "جاري الإرسال..." : "إرسال التقييم"}
           </button>
         </div>
-
       </form>
     </div>
   );
