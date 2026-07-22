@@ -1,3 +1,5 @@
+
+
 import type {
   AdminCourse,
   AdminCourseFilters,
@@ -531,7 +533,7 @@ export const adminCoursesMock: AdminCourse[] = baseCourses.map((course) => {
     (review) => review.course_id === course.id && review.status === "active",
   );
 
-  const distribution: AdminCourse["rating_distribution"] = {
+  const distribution: Record<`${Rating}`, number> = {
     "1": 0,
     "2": 0,
     "3": 0,
@@ -540,7 +542,8 @@ export const adminCoursesMock: AdminCourse[] = baseCourses.map((course) => {
   };
 
   reviews.forEach((review) => {
-    distribution[String(review.rating_overall) as keyof typeof distribution] += 1;
+    const rating = String(review.rating_overall) as `${Rating}`;
+    distribution[rating] += 1;
   });
 
   const prerequisites = (course.prerequisiteCodes ?? [])
@@ -668,7 +671,11 @@ export function listMockAdminCourses(
         course.university,
         course.major,
         course.category,
-      ].some((value) => value.toLowerCase().includes(search)),
+      ].some(
+  (value) =>
+    value?.toLowerCase().includes(search) ??
+    false,
+),
     );
   }
 

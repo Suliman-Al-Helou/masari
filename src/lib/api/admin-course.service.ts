@@ -269,8 +269,10 @@ export async function createManagedCourse(
   input: CreateAdminCourseInput,
 ): Promise<AdminCourse> {
   if (USE_MOCK_DATA) {
-    return createMockAdminCourse(input);
-  }
+return createMockAdminCourse({
+  ...input,
+  category: input.category ?? "غير محدد",
+});  }
 
   const { data: courseId, error } = await dbAdmin.rpc(
     "create_admin_course_with_prerequisites",
@@ -326,8 +328,18 @@ export async function updateManagedCourse(
   input: UpdateAdminCourseInput,
 ): Promise<AdminCourse> {
   if (USE_MOCK_DATA) {
-    const course = updateMockAdminCourse(courseId, input);
+const mockInput = {
+  ...input,
+  category:
+    input.category === undefined
+      ? undefined
+      : input.category ?? "غير محدد",
+};
 
+const course = updateMockAdminCourse(
+  courseId,
+  mockInput,
+);
     if (!course) {
       throw new AdminCourseServiceError(
         "المادة غير موجودة",
